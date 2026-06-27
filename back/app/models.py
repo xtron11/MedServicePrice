@@ -103,6 +103,20 @@ class RawPrice(Base):
     parsed_at        = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     is_matched       = Column(Boolean, default=False)       # привязана ли к нормализованной
 
+class PriceHistory(Base):
+    """
+    История изменений цен за последние 30 дней.
+    Пишется только при изменении цены — не дублирует одинаковые значения.
+    Записи старше 30 дней удаляются автоматически при каждом парсинге.
+    """
+    __tablename__ = "price_history"
+ 
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    price_id    = Column(UUID(as_uuid=True), ForeignKey("prices.id", ondelete="CASCADE"), nullable=False)
+    clinic_id   = Column(UUID(as_uuid=True), ForeignKey("clinics.id"), nullable=False)
+    service_id  = Column(UUID(as_uuid=True), ForeignKey("service_catalog.id"), nullable=True)
+    price_kzt   = Column(Numeric(12, 2), nullable=False)
+    recorded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 # ─────────────────────────────────────────────
 # Нормализованные цены (основная таблица поиска)
