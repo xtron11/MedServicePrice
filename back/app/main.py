@@ -2,8 +2,8 @@ from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, select, func, or_, update
 from sqlalchemy.orm import Session
-from app.config import settings
-from app.models import Base, Clinic, Price, ServiceCategory, ServiceCatalog, CATEGORY_LABELS, UnmatchedQueue
+from back.app.config import settings
+from back.app.models import Base, Clinic, Price, ServiceCategory, ServiceCatalog, CATEGORY_LABELS, UnmatchedQueue
 from datetime import datetime, timedelta
 
 engine = create_engine(settings.DATABASE_URL_sync)

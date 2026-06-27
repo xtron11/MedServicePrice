@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 def run_kdl():
     log.info("=== Старт парсера КДЛ Олимп ===")
     try:
-        from parsers.kdl_olymp import run
+        from back.parsers.kdl_olymp import run
         asyncio.run(run())
         log.info("=== КДЛ Олимп завершён ===")
     except Exception as e:
@@ -41,7 +41,7 @@ def run_kdl():
 def run_invitro():
     log.info("=== Старт парсера Инвитро ===")
     try:
-        from parsers.invitro import run
+        from back.parsers.invitro import run
         asyncio.run(run())
         log.info("=== Инвитро завершён ===")
     except Exception as e:
@@ -51,7 +51,7 @@ def run_invitro():
 def run_normalizer():
     log.info("=== Старт нормализации ===")
     try:
-        from app.normalizer import run_normalization
+        from back.app.normalizer import run_normalization
         run_normalization()
         log.info("=== Нормализация завершена ===")
     except Exception as e:

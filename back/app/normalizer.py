@@ -14,8 +14,8 @@ from sqlalchemy.orm import Session
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.models import ServiceCatalog, Price, UnmatchedQueue, ServiceCategory
-from app.config import settings
+from back.app.models import ServiceCatalog, Price, UnmatchedQueue, ServiceCategory
+from back.app.config import settings
 
 # ─── КОНСТАНТЫ И НАСТРОЙКИ ───────────────────────────────────────────────────
 

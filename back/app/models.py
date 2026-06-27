@@ -175,5 +175,5 @@ def create_tables(database_url: str):
 
 
 if __name__ == "__main__":
-    from config import settings
+    from back.app.config import settings
     create_tables(settings.DATABASE_URL_sync)

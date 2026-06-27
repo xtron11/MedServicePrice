@@ -11,9 +11,9 @@ import os
 # Добавляем корневую директорию в path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.models import Base, ServiceCategory
-from app.config import settings
-from app.db_service import save_parsed_data, log_parser_execution, save_clinic_branches
+from back.app.models import Base, ServiceCategory
+from back.app.config import settings
+from back.app.db_service import save_parsed_data, log_parser_execution, save_clinic_branches
 
 SOURCE = "invitro.kz"
 

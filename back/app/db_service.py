@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from rapidfuzz import process, utils
-from app.models import (
+from back.app.models import (
     Base, Clinic, ClinicBranch, Price, RawPrice,
     ServiceCatalog, ServiceCategory, UnmatchedQueue, ParserLog
 )
