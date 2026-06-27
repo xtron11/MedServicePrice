@@ -56,6 +56,15 @@ def run_doq():
     except Exception as e:
         log.error(f"doq.kz — ошибка: {e}", exc_info=True)
 
+def run_helix():
+    log.info("=== Старт парсера Helix ===")
+    try:
+        from back.parsers.helix import run
+        asyncio.run(run())
+        log.info("=== Helix завершён ===")
+    except Exception as e:
+        log.error(f"Helix — ошибка: {e}", exc_info=True)
+
 def run_normalizer():
     log.info("=== Старт нормализации ===")
     try:
@@ -71,6 +80,8 @@ def run_all():
     log.info("====== Полный цикл обновления данных ======")
     run_kdl()
     run_invitro()
+    run_helix()
+    run_doq()
     run_normalizer()
     log.info(f"====== Цикл завершён: {datetime.now().strftime('%Y-%m-%d %H:%M')} ======")
 
@@ -104,6 +115,15 @@ def main():
         trigger=CronTrigger(hour=4, minute=30),
         id="doq",
         name="Парсер doq.kz (врачи)",
+        max_instances=1,
+        misfire_grace_time=600,
+    )
+
+    scheduler.add_job(
+        run_helix,
+        trigger=CronTrigger(hour=3, minute=45),
+        id="helix",
+        name="Парсер Helix",
         max_instances=1,
         misfire_grace_time=600,
     )
@@ -145,6 +165,8 @@ if __name__ == "__main__":
         run_invitro()
     elif "--doq" in sys.argv:
         run_doq()
+    elif "--helix" in sys.argv:
+        run_helix()
     elif "--normalize" in sys.argv:
         run_normalizer()
     else:
