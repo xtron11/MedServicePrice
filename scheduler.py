@@ -47,6 +47,14 @@ def run_invitro():
     except Exception as e:
         log.error(f"Инвитро — ошибка: {e}", exc_info=True)
 
+def run_doq():
+    log.info("=== Старт парсера doq.kz ===")
+    try:
+        from back.parsers.doq import run
+        asyncio.run(run())
+        log.info("=== doq.kz завершён ===")
+    except Exception as e:
+        log.error(f"doq.kz — ошибка: {e}", exc_info=True)
 
 def run_normalizer():
     log.info("=== Старт нормализации ===")
@@ -92,6 +100,15 @@ def main():
     )
 
     scheduler.add_job(
+        run_doq,
+        trigger=CronTrigger(hour=4, minute=30),
+        id="doq",
+        name="Парсер doq.kz (врачи)",
+        max_instances=1,
+        misfire_grace_time=600,
+    )
+
+    scheduler.add_job(
         run_normalizer,
         trigger=CronTrigger(hour=5, minute=0),
         id="normalizer",
@@ -126,6 +143,8 @@ if __name__ == "__main__":
         run_kdl()
     elif "--invitro" in sys.argv:
         run_invitro()
+    elif "--doq" in sys.argv:
+        run_doq()
     elif "--normalize" in sys.argv:
         run_normalizer()
     else:

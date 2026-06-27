@@ -18,7 +18,11 @@ from back.app.db_service import save_parsed_data, log_parser_execution, save_cli
 SOURCE = "invitro.kz"
 
 CITIES = [
-    "karaganda",
+    "almaty", "astana", "shymkent", "karaganda", "aktobe", "esik",
+    "pavlodar", "semey", "atyrau", "kostanay", "boralday", "zhanaozen",
+    "taraz", "kyzylorda", "ust-kamenogorsk", "aktau", "uralsk", "irgeli",
+    "otegen-batyra", "petropavlovsk", "saran", "uzynagash", "ushkonyr",
+    "talgar2", "taldykorgan", "temirtau", "tuzdybastau"
 ]
 
 HEADERS = {
@@ -41,7 +45,7 @@ def parse_branches_html(html_content: str) -> list:
     soup = BeautifulSoup(html_content, "html.parser")
     branches = []
 
-    # Находим все карточки офисов (как на image_35d0bb.png)
+    # Находим все карточки офисов
     cards = soup.find_all("div", class_=lambda x: x and "offices_card" in x)
 
     for card in cards:
