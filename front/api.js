@@ -114,16 +114,19 @@ const MedicalApi = {
      * @param {string} query 
      * @returns {Promise<string[]>}
      */
-    async getSuggestions(query) {
-        if (!query || !query.trim()) return [];
-        
+    async getSuggestions(query = '') {
         try {
-            const encodedQuery = encodeURIComponent(query.trim());
+            const qVal = (query || '').trim();
+            const encodedQuery = encodeURIComponent(qVal);
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2000);
             
-            // Пробуем несколько возможных эндпоинтов бэкенда для совместимости
-            const res = await fetch(`${this.baseUrl}/api/suggest?q=${encodedQuery}&query=${encodedQuery}`, {
+            // Если запрос пустой, пробуем запросить без параметров или с пустыми параметрами для получения дефолтных популярных подсказок
+            const url = qVal 
+                ? `${this.baseUrl}/api/suggest?q=${encodedQuery}&query=${encodedQuery}`
+                : `${this.baseUrl}/api/suggest`;
+
+            const res = await fetch(url, {
                 signal: controller.signal,
                 headers: { 'Accept': 'application/json' }
             });

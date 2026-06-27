@@ -36,6 +36,30 @@ const CITY_MAP = {
     'ust-kamenogorsk': 'Усть-Каменогорск'
 };
 
+// Глобальная константа координат
+const CITY_CENTERS = {
+    'Алматы': { lat: 43.2389, lng: 76.8897 },
+    'Астана': { lat: 51.1693, lng: 71.4491 },
+    'Караганда': { lat: 49.8019, lng: 73.1021 },
+    'Шымкент': { lat: 42.3249, lng: 69.5901 },
+    'Актобе': { lat: 50.2839, lng: 57.1669 },
+    'Атырау': { lat: 47.0945, lng: 51.9054 },
+    'Актау': { lat: 43.6481, lng: 51.1722 },
+    'Павлодар': { lat: 52.3001, lng: 76.9504 },
+    'Уральск': { lat: 51.2333, lng: 51.3667 },
+    'Усть-Каменогорск': { lat: 49.9501, lng: 82.6167 },
+    'Тараз': { lat: 42.9000, lng: 71.3667 },
+    'Семей': { lat: 50.4111, lng: 80.2501 },
+    'Костанай': { lat: 53.2144, lng: 63.6244 },
+    'Кызылорда': { lat: 44.8488, lng: 65.4822 },
+    'Темиртау': { lat: 50.0544, lng: 72.9644 },
+    'Кокшетау': { lat: 53.2833, lng: 69.4000 },
+    'Балхаш': { lat: 46.8500, lng: 74.9667 },
+    'Абай': { lat: 49.6333, lng: 72.8500 },
+    'Сарань': { lat: 49.7917, lng: 72.8583 },
+    'Шахтинск': { lat: 49.7111, lng: 72.5861 }
+};
+
 function getLatinCity(cyrillicName) {
     if (!cyrillicName) return '';
     const nameLower = cyrillicName.toLowerCase().trim();
@@ -49,7 +73,6 @@ function getLatinCity(cyrillicName) {
 
 function safeParseDate(dateStr) {
     if (!dateStr) return new Date();
-    // Handle DD.MM.YYYY
     const match = String(dateStr).trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
     if (match) {
         return new Date(`${match[3]}-${match[2]}-${match[1]}`);
@@ -67,25 +90,21 @@ createApp({
             isLoading: false,
             hasSearched: false, 
             isDarkMode: false,
+            isLogoHovered: false,
             
-            // Модальное окно контактов и подписки
             isModalOpen: false,
             selectedClinicName: '',
-            selectedServiceItem: null, // объект выбранной услуги (для подписки)
+            selectedServiceItem: null,
             
-            // Состояние модального окна "О проекте"
             isAboutModalOpen: false,
             
-            // Поля формы подписки
             subscriptionForm: {
-                type: 'email',      // 'email' или 'telegram'
-                value: '',          // email или @username
-                condition: 'drop',  // 'any' (любое изменение) или 'drop' (только снижение)
+                type: 'email',
+                value: '',
+                condition: 'drop',
                 agreed: true
             },
             subscriptionSuccess: false,
-            
-            // Список активных подписок пользователя (сохраняется в localStorage)
             activeSubscriptions: [],
             
             filters: {
@@ -95,11 +114,10 @@ createApp({
                 maxPrice: null,
                 minRating: 0,
                 onlineBooking: false,
-                searchType: 'service' // 'service', 'doctor'
+                searchType: 'service'
             },
             sortBy: 'price_asc',
 
-            // Геолокация
             userLatitude: null,
             userLongitude: null,
             isLocating: false,
@@ -108,7 +126,6 @@ createApp({
                 city: ''
             },
 
-            // Сравнение клиник
             comparisonList: [],
             isCompareModalOpen: false,
             isMobileFiltersOpen: false,
@@ -119,7 +136,6 @@ createApp({
             citySearchQuery: '',
             availableCities: ['Алматы', 'Астана', 'Караганда', 'Шымкент', 'Актобе', 'Атырау', 'Актау', 'Павлодар', 'Уральск', 'Усть-Каменогорск', 'Тараз', 'Семей', 'Костанай', 'Кызылорда', 'Темиртау', 'Кокшетау', 'Балхаш', 'Абай', 'Сарань', 'Шахтинск'],
             
-            // Настройки подключения к реальному API бэкенда (Swagger FastAPI)
             isApiSettingsModalOpen: false,
             tempApiUrl: localStorage.getItem('med_api_url') || 'http://127.0.0.1:8000',
             apiUrl: localStorage.getItem('med_api_url') || 'http://127.0.0.1:8000',
@@ -131,7 +147,6 @@ createApp({
                 { value: 'procedure', label: 'Процедура' }
             ],
 
-            // Популярные услуги для быстрого поиска на главной
             popularServices: [
                 { name: "Общий анализ крови", icon: "fa-droplet" },
                 { name: "МРТ головного мозга", icon: "fa-brain" },
@@ -140,16 +155,14 @@ createApp({
                 { name: "УЗИ сердца (ЭхоКГ)", icon: "fa-heart-pulse" }
             ],
 
-            // Режим отображения (список или карта)
             viewMode: 'list',
             map: null,
 
-            // Уведомления
             notification: {
                 show: false,
                 title: '',
                 message: '',
-                type: 'warning' // 'warning', 'info', 'success', 'error'
+                type: 'warning'
             },
             notificationTimeout: null
         }
@@ -159,7 +172,6 @@ createApp({
             let result = this.services.filter(item => {
                 if (item.city !== this.filters.city) return false;
                 
-                // Фильтрация по категории с гибким маппингом (поддерживает и русский, и английский)
                 if (this.filters.category) {
                     const catVal = this.filters.category.toLowerCase().trim();
                     const itemCat = (item.category || '').toLowerCase().trim();
@@ -207,17 +219,13 @@ createApp({
             const minPrice = Math.min(...prices);
             const maxPrice = Math.max(...prices);
             
-            // Вычисляем медиану цен вместо простого среднего арифметического
             const sortedPrices = [...prices].sort((a, b) => a - b);
             const mid = Math.floor(sortedPrices.length / 2);
             const medianPrice = sortedPrices.length % 2 !== 0 
                 ? sortedPrices[mid] 
                 : Math.round((sortedPrices[mid - 1] + sortedPrices[mid]) / 2);
             
-            // Находим самое выгодное предложение
             const cheapest = this.filteredAndSortedServices.reduce((min, item) => item.price < min.price ? item : min, this.filteredAndSortedServices[0]);
-            
-            // Экономия (разница между макс и мин)
             const potentialSavings = maxPrice - minPrice;
             
             return {
@@ -318,7 +326,6 @@ createApp({
                 document.documentElement.classList.remove('dark');
             }
         },
-        
         goHome() {
             this.hasSearched = false;
             this.searchQuery = '';
@@ -386,9 +393,7 @@ createApp({
 
             this.showNotification("Проверка...", "Тестирование подключения к API...", "info");
             
-            // Настраиваем адрес в модуле API
             MedicalApi.setBaseUrl(url);
-            
             const isConnected = await MedicalApi.testConnection();
             
             this.apiUrl = url;
@@ -403,7 +408,7 @@ createApp({
                 }
             } else {
                 this.isApiConnected = false;
-                this.showNotification("Сохранено с предупреждением", "Адрес сохранен, но бэкенд недоступен или заблокирован (проверьте Mixed Content / CORS). Используется локальная демо-база данных.", "warning");
+                this.showNotification("Сохранено с предупреждением", "Адрес сохранен, но бэкенд недоступен или заблокирован. Используется локальная база.", "warning");
             }
         },
         resetApiSettingsToDefault() {
@@ -412,41 +417,16 @@ createApp({
             this.apiUrl = defaultUrl;
             MedicalApi.setBaseUrl(defaultUrl);
             this.isApiConnected = false;
-            this.showNotification("Сброшено", "Адрес API сброшен на стандартный http://127.0.0.1:8000. Включен демонстрационный режим.", "info");
+            this.showNotification("Сброшено", "Адрес API сброшен на стандартный. Включен демонстрационный режим.", "info");
         },
         
-        // Получить реалистичные координаты для клиники, если они отсутствуют на бэкенде
         getClinicCoordinates(clinicName, cityName, address = '') {
-            const cityCenters = {
-                'Алматы': { lat: 43.2389, lng: 76.8897 },
-                'Астана': { lat: 51.1693, lng: 71.4491 },
-                'Караганда': { lat: 49.8019, lng: 73.1021 },
-                'Шымкент': { lat: 42.3249, lng: 69.5901 },
-                'Актобе': { lat: 50.2839, lng: 57.1669 },
-                'Атырау': { lat: 47.0945, lng: 51.9054 },
-                'Актау': { lat: 43.6481, lng: 51.1722 },
-                'Павлодар': { lat: 52.3001, lng: 76.9504 },
-                'Уральск': { lat: 51.2333, lng: 51.3667 },
-                'Усть-Каменогорск': { lat: 49.9501, lng: 82.6167 },
-                'Тараз': { lat: 42.9000, lng: 71.3667 },
-                'Семей': { lat: 50.4111, lng: 80.2501 },
-                'Костанай': { lat: 53.2144, lng: 63.6244 },
-                'Кызылорда': { lat: 44.8488, lng: 65.4822 },
-                'Темиртау': { lat: 50.0544, lng: 72.9644 },
-                'Кокшетау': { lat: 53.2833, lng: 69.4000 },
-                'Балхаш': { lat: 46.8500, lng: 74.9667 },
-                'Абай': { lat: 49.6333, lng: 72.8500 },
-                'Сарань': { lat: 49.7917, lng: 72.8583 },
-                'Шахтинск': { lat: 49.7111, lng: 72.5861 }
-            };
-
-            const center = cityCenters[cityName] || cityCenters['Караганда'];
+            const center = CITY_CENTERS[cityName] || CITY_CENTERS['Караганда'];
             let baseLat = center.lat;
             let baseLng = center.lng;
             
             const addressHash = address ? address.toLowerCase().trim() : '';
             
-            // Высокоточное геокодирование для ключевых адресов в Караганде
             if (cityName === 'Караганда') {
                 if (addressHash.includes('гоголя') && addressHash.includes('41')) {
                     return { lat: 49.811565, lng: 73.099195 };
@@ -466,7 +446,8 @@ createApp({
                 } else if (clinicHash.includes('invivo') || clinicHash.includes('инвиво')) {
                     baseLat = 49.8032; baseLng = 73.0841;
                 } else if (clinicHash.includes('инвитро') || clinicHash.includes('invitro')) {
-                    baseLat = 49.8055; baseLng = 73.0920;
+                    // ИСПРАВЛЕНИЕ МАРКЕРА ИНВИТРО: принудительно задаем координаты Гоголя 41
+                    baseLat = 49.811565; baseLng = 73.099195;
                 } else if (clinicHash.includes('гиппократ') || clinicHash.includes('hippokrat')) {
                     baseLat = 49.8091; baseLng = 73.1012;
                 }
@@ -487,7 +468,6 @@ createApp({
                     baseLat = 43.2515; baseLng = 76.9150;
                 }
             } else {
-                // Псевдослучайное детерминированное распределение на основе названия
                 let hash = 0;
                 for (let i = 0; i < clinicName.length; i++) {
                     hash = clinicName.charCodeAt(i) + ((hash << 5) - hash);
@@ -498,13 +478,12 @@ createApp({
                 baseLng = center.lng + lngOffset;
             }
 
-            // Добавляем микросмещение на основе адреса, чтобы разные филиалы одного бренда не сливались на карте
             if (address) {
                 let h = 0;
                 for (let i = 0; i < address.length; i++) {
                     h = address.charCodeAt(i) + ((h << 5) - h);
                 }
-                const latOffset = ((Math.abs(h) % 100) / 20000) - 0.0025; // Очень легкое смещение до 200 метров
+                const latOffset = ((Math.abs(h) % 100) / 20000) - 0.0025;
                 const lngOffset = (((Math.abs(h) >> 8) % 100) / 20000) - 0.0025;
                 return {
                     lat: baseLat + latOffset,
@@ -515,14 +494,13 @@ createApp({
             return { lat: baseLat, lng: baseLng };
         },
         
-        // Высокоточное динамическое геокодирование по тексту адреса через OSM Nominatim и локальный словарь
         async geocodeAddress(address, city) {
             const addressClean = address.toLowerCase().trim();
             const cityClean = city.toLowerCase().trim();
 
-            // 1. Высокоточные хардкод-координаты для Караганды
             if (cityClean === 'караганда') {
-                if (addressClean.includes('гоголя') && addressClean.includes('41')) {
+                // ИСПРАВЛЕНИЕ МАРКЕРА ИНВИТРО: если парсер присылает Гоголя 43, перехватываем и ставим 41
+                if (addressClean.includes('гоголя') && (addressClean.includes('41') || addressClean.includes('43'))) {
                     return { lat: 49.811565, lng: 73.099195 };
                 }
                 if (addressClean.includes('сейфуллина') && addressClean.includes('17')) {
@@ -551,7 +529,6 @@ createApp({
                 }
             }
             
-            // 2. Высокоточные хардкод-координаты для Алматы
             if (cityClean === 'алматы') {
                 if (addressClean.includes('толе би') && addressClean.includes('99')) {
                     return { lat: 43.2514, lng: 76.9298 };
@@ -561,12 +538,9 @@ createApp({
                 }
             }
 
-            // 3. Динамический запрос к Nominatim API
             try {
-                // Очищаем адрес от лишней разметки для лучшего сопоставления
                 let searchStr = address.replace(/(кабинет|офис|этаж|блок|бутик|квартира)\s*\d+/gi, '').trim();
                 
-                // Удаляем повторяющиеся упоминания городов во избежание путаницы у Nominatim
                 const cleanPhrases = [
                     `г. ${cityClean}`, `г.${cityClean}`, `город ${cityClean}`, cityClean,
                     'казахстан', 'республика казахстан', 'republic of kazakhstan'
@@ -577,10 +551,8 @@ createApp({
                     searchStr = searchStr.replace(regex, '$1');
                 });
                 
-                // Убираем лишние запятые, точки и пробелы по краям
                 searchStr = searchStr.replace(/^[,\s.]+/, '').replace(/[,\s.]+$/, '').replace(/,\s*,/g, ',').trim();
                 
-                // Если после очистки ничего не осталось, используем исходный очищенный адрес
                 if (!searchStr) {
                     searchStr = address.replace(/(кабинет|офис|этаж|блок|бутик|квартира)\s*\d+/gi, '').trim();
                 }
@@ -601,36 +573,11 @@ createApp({
                         const lat = parseFloat(data[0].lat);
                         const lng = parseFloat(data[0].lon);
                         
-                        // Защитный механизм: сверяем расстояние с центром города.
-                        // Если расстояние больше 30 км, значит Nominatim нашел объект в другом городе/регионе (например, Балхаш вместо Караганды).
-                        const cityCenters = {
-                            'Алматы': { lat: 43.2389, lng: 76.8897 },
-                            'Астана': { lat: 51.1693, lng: 71.4491 },
-                            'Караганда': { lat: 49.8019, lng: 73.1021 },
-                            'Шымкент': { lat: 42.3249, lng: 69.5901 },
-                            'Актобе': { lat: 50.2839, lng: 57.1669 },
-                            'Атырау': { lat: 47.0945, lng: 51.9054 },
-                            'Актау': { lat: 43.6481, lng: 51.1722 },
-                            'Павлодар': { lat: 52.3001, lng: 76.9504 },
-                            'Уральск': { lat: 51.2333, lng: 51.3667 },
-                            'Усть-Каменогорск': { lat: 49.9501, lng: 82.6167 },
-                            'Тараз': { lat: 42.9000, lng: 71.3667 },
-                            'Семей': { lat: 50.4111, lng: 80.2501 },
-                            'Костанай': { lat: 53.2144, lng: 63.6244 },
-                            'Кызылорда': { lat: 44.8488, lng: 65.4822 },
-                            'Темиртау': { lat: 50.0544, lng: 72.9644 },
-                            'Кокшетау': { lat: 53.2833, lng: 69.4000 },
-                            'Балхаш': { lat: 46.8500, lng: 74.9667 },
-                            'Абай': { lat: 49.6333, lng: 72.8500 },
-                            'Сарань': { lat: 49.7917, lng: 72.8583 },
-                            'Шахтинск': { lat: 49.7111, lng: 72.5861 }
-                        };
-                        
-                        const center = cityCenters[city] || cityCenters['Караганда'];
+                        const center = CITY_CENTERS[city] || CITY_CENTERS['Караганда'];
                         const dist = this.getDistance(lat, lng, center.lat, center.lng);
                         
                         if (dist > 30) {
-                            console.warn(`Геокодированный адрес "${address}" находится слишком далеко (${dist} км) от центра города ${city}. Игнорируем некорректные координаты.`);
+                            console.warn(`Геокодированный адрес слишком далеко. Игнорируем.`);
                             return null;
                         }
                         
@@ -641,10 +588,9 @@ createApp({
                 console.warn("Dynamic OSM geocoding failed, keeping local fallback coordinates:", e.message);
             }
 
-            return null; // Возвращаем null при неудаче, чтобы использовать стабильные базовые координаты без сдвигов
+            return null;
         },
 
-        // Запуск асинхронного фонового геокодирования для всех найденных услуг
         async geocodeAllServices() {
             const geocodeCache = {};
 
@@ -669,21 +615,18 @@ createApp({
                     item.lat = coords.lat;
                     item.lng = coords.lng;
                     
-                    // Обновляем маркеры на карте реактивно
                     if (this.viewMode === 'map' && this.map) {
                         this.initMap();
                     }
                 }
                 
-                // Небольшой интервал во избежание блокировок API (300 мс)
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
         },
         
-        // Расчет расстояния по формуле гаверсинусов (Haversine Formula)
         getDistance(lat1, lon1, lat2, lon2) {
             if (!lat1 || !lon1 || !lat2 || !lon2) return null;
-            const R = 6371; // Радиус Земли в км
+            const R = 6371; 
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = 
@@ -692,10 +635,9 @@ createApp({
                 Math.sin(dLon/2) * Math.sin(dLon/2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
             const d = R * c; 
-            return Math.round(d * 10) / 10; // Округление до 1 знака после запятой
+            return Math.round(d * 10) / 10;
         },
 
-        // Запрос геопозиции пользователя
         requestLocation() {
             if (!navigator.geolocation) {
                 this.showNotification("Ошибка геопозиции", "Геолокация не поддерживается вашим браузером", "error");
@@ -711,14 +653,13 @@ createApp({
                 },
                 (error) => {
                     console.error(error);
-                    this.showNotification("Ошибка геопозиции", "Не удалось получить местоположение. Пожалуйста, разрешите доступ к геоданным в настройках браузера.", "error");
+                    this.showNotification("Ошибка геопозиции", "Не удалось получить местоположение.", "error");
                     this.isLocating = false;
                 },
                 { enableHighAccuracy: true, timeout: 8000 }
             );
         },
 
-        // Логика сравнения клиник (добавить/удалить)
         toggleComparison(item) {
             const index = this.comparisonList.findIndex(x => x.id === item.id);
             if (index > -1) {
@@ -785,12 +726,10 @@ createApp({
             this.showNotification("Фильтры сброшены", "Все настройки фильтрации возвращены к исходным.", "info");
         },
         
-        // Открытие модального окна контактов и подписки
         openModal(item) {
             this.selectedClinicName = item.clinic;
             this.selectedServiceItem = item;
             
-            // Сброс формы подписки
             this.subscriptionForm.value = '';
             this.subscriptionForm.type = 'email';
             this.subscriptionForm.condition = 'drop';
@@ -807,7 +746,6 @@ createApp({
             if (!this.isAboutModalOpen) document.body.style.overflow = ''; 
         },
 
-        // Модалка "О проекте"
         openAboutModal() {
             this.isAboutModalOpen = true;
             document.body.style.overflow = 'hidden'; 
@@ -817,7 +755,6 @@ createApp({
             if (!this.isModalOpen) document.body.style.overflow = ''; 
         },
         
-        // Логика оформления подписки на уведомления
         handleSubscribe() {
             const contactValue = this.subscriptionForm.value.trim();
             if (!contactValue) {
@@ -828,7 +765,7 @@ createApp({
             if (this.subscriptionForm.type === 'email') {
                 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
                 if (!emailRegex.test(contactValue)) {
-                    this.showNotification("Неверный E-mail", "Пожалуйста, укажите корректный адрес электронной почты (например: client@mail.ru)!", "error");
+                    this.showNotification("Неверный E-mail", "Пожалуйста, укажите корректный адрес электронной почты!", "error");
                     return;
                 }
             } else if (this.subscriptionForm.type === 'telegram') {
@@ -838,10 +775,10 @@ createApp({
                 }
                 const telegramRegex = /^@[a-zA-Z0-9_]{3,32}$/;
                 if (!telegramRegex.test(username)) {
-                    this.showNotification("Неверный Telegram", "Никнейм должен начинаться с @ и содержать от 3 до 32 символов (латиница, цифры, подчеркивания)!", "error");
+                    this.showNotification("Неверный Telegram", "Никнейм должен начинаться с @ и содержать от 3 до 32 символов!", "error");
                     return;
                 }
-                this.subscriptionForm.value = username; // Сохраняем исправленный вариант с @
+                this.subscriptionForm.value = username; 
             }
 
             if (!this.subscriptionForm.agreed) {
@@ -849,7 +786,6 @@ createApp({
                 return;
             }
             
-            // Создаем новую запись подписки
             const newSub = {
                 id: Date.now(),
                 clinicName: this.selectedClinicName,
@@ -874,7 +810,6 @@ createApp({
             );
         },
         
-        // Удаление активной подписки
         removeSubscription(subId) {
             this.activeSubscriptions = this.activeSubscriptions.filter(s => s.id !== subId);
             this.saveSubscriptions();
@@ -904,7 +839,7 @@ createApp({
             if (!this.searchQuery.trim()) {
                 this.showNotification(
                     "Укажите медицинскую услугу",
-                    "Пожалуйста, введите название услуги или выберите подсказку (например: Общий анализ крови, УЗИ, МРТ) для выполнения поиска.",
+                    "Пожалуйста, введите название услуги.",
                     "warning"
                 );
                 return;
@@ -916,7 +851,6 @@ createApp({
 
             const query = this.searchQuery.trim();
 
-            // Вызываем метод поиска из нашего api.js модуля
             const data = await MedicalApi.searchServices({
                 query,
                 city: getLatinCity(this.filters.city),
@@ -928,15 +862,12 @@ createApp({
             if (data && Array.isArray(data)) {
                 this.services = data.map((item, index) => {
                     const clinicName = item.clinic || item.clinic_name || 'Клиника';
-                    
                     let cityName = item.city ? (CITY_MAP[item.city.toLowerCase()] || (item.city.charAt(0).toUpperCase() + item.city.slice(1))) : '';
                     
-                    // Если город пустой, попробуем определить по адресу клиники
                     if (!cityName && item.address) {
                         const addrLower = item.address.toLowerCase();
                         for (const [latin, cyr] of Object.entries(CITY_MAP)) {
-                            // Отрезаем окончания или проверяем вхождение, например "караганд", "алмат", "астан"
-                            const root = cyr.slice(0, -1).toLowerCase(); // Караганд, Алмат, Астан
+                            const root = cyr.slice(0, -1).toLowerCase(); 
                             if (addrLower.includes(root)) {
                                 cityName = cyr;
                                 break;
@@ -944,12 +875,10 @@ createApp({
                         }
                     }
                     
-                    // Если все еще пустой, берем выбранный фильтр города
                     if (!cityName) {
                         cityName = this.filters.city || 'Алматы';
                     }
                     
-                    // Проверяем точный адрес для принудительного высокоточного позиционирования
                     let lat = null;
                     let lng = null;
                     
@@ -967,13 +896,11 @@ createApp({
                         }
                     }
                     
-                    // Если не переопределено точным адресом, используем координаты из API
                     if (!lat || !lng) {
                         lat = item.lat || item.latitude || null;
                         lng = item.lng || item.longitude || null;
                     }
                     
-                    // Если нет в API, вычисляем по названию клиники
                     if (!lat || !lng) {
                         const calculated = this.getClinicCoordinates(clinicName, cityName, item.address || '');
                         lat = calculated.lat;
@@ -1004,17 +931,15 @@ createApp({
                 if (this.viewMode === 'map') {
                     this.initMap();
                 }
-                // Запускаем фоновое высокоточное геокодирование по текстовым адресам
                 this.geocodeAllServices();
                 return;
             }
 
-            // Если бэкенд пуст или произошла ошибка
             this.services = [];
             this.isLoading = false;
             this.showNotification(
                 "Результаты поиска",
-                "Не удалось получить предложения с сервера. Попробуйте обновить страницу или изменить запрос.",
+                "Не удалось получить предложения с сервера.",
                 "info"
             );
         },
@@ -1026,9 +951,7 @@ createApp({
             }
         },
 
-        // --- МЕТОДЫ ИНТЕГРАЦИИ С РЕАЛЬНЫМ API БЭКЕНДА (FASTAPI) ---
         async testApiConnection() {
-            // Прямой запрос списка городов без лишнего пинг-запроса для максимального быстродействия
             try {
                 const citiesData = await MedicalApi.getCities();
                 if (citiesData && Array.isArray(citiesData)) {
@@ -1045,10 +968,8 @@ createApp({
                     }
                 }
             } catch (e) {
-                console.warn("Ошибка при получении списка городов с бэкенда:", e);
+                console.warn("Ошибка при получении списка городов:", e);
             }
-            
-            // Загрузка категорий услуг
             await this.fetchCategories();
         },
 
@@ -1057,7 +978,6 @@ createApp({
         },
 
         async detectUserLocation() {
-            // Если город уже сохранен пользователем и подтвержден, используем его
             const saved = localStorage.getItem('selected_city');
             const isConfirmed = localStorage.getItem('city_confirmed') === 'true';
             
@@ -1068,8 +988,7 @@ createApp({
                 }
             }
 
-            // Попытка определить по IP (ip-api.com или ipapi.co)
-            let detected = 'Караганда'; // По умолчанию Караганда по запросу пользователя
+            let detected = 'Караганда';
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 2000);
@@ -1093,7 +1012,6 @@ createApp({
                     }
                 }
             } catch (e) {
-                console.warn("ip-api detection error, trying backup:", e);
                 try {
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 2000);
@@ -1116,15 +1034,12 @@ createApp({
                             }
                         }
                     }
-                } catch (err) {
-                    console.warn("ipapi.co detection error:", err);
-                }
+                } catch (err) {}
             }
 
             this.detectedCity = detected;
             this.filters.city = detected;
 
-            // Открываем модальное окно подтверждения города
             if (!isConfirmed) {
                 this.isCityConfirmModalOpen = true;
             }
@@ -1138,20 +1053,21 @@ createApp({
         },
 
         async fetchSuggestions() {
-            if (!this.searchQuery.trim()) {
+            const query = (this.searchQuery || '').trim();
+            try {
+                const suggestions = await MedicalApi.getSuggestions(query);
+                if (suggestions && Array.isArray(suggestions) && suggestions.length > 0) {
+                    this.suggestions = suggestions;
+                    return;
+                }
+            } catch (e) { }
+            
+            if (!query) {
                 this.suggestions = POPULAR_SUGGESTIONS;
-                return;
+            } else {
+                const lowerQuery = query.toLowerCase();
+                this.suggestions = POPULAR_SUGGESTIONS.filter(s => s.toLowerCase().includes(lowerQuery));
             }
-            
-            const suggestions = await MedicalApi.getSuggestions(this.searchQuery);
-            if (suggestions && Array.isArray(suggestions) && suggestions.length > 0) {
-                this.suggestions = suggestions;
-                return;
-            }
-            
-            // Локальный поиск по популярным предложениям
-            const lowerQuery = this.searchQuery.trim().toLowerCase();
-            this.suggestions = POPULAR_SUGGESTIONS.filter(s => s.toLowerCase().includes(lowerQuery));
         },
 
         initMap() {
@@ -1164,31 +1080,8 @@ createApp({
                     this.map = null;
                 }
                 
-                const cityCenters = {
-                    'Алматы': { lat: 43.2389, lng: 76.8897 },
-                    'Астана': { lat: 51.1693, lng: 71.4491 },
-                    'Караганда': { lat: 49.8019, lng: 73.1021 },
-                    'Шымкент': { lat: 42.3249, lng: 69.5901 },
-                    'Актобе': { lat: 50.2839, lng: 57.1669 },
-                    'Атырау': { lat: 47.0945, lng: 51.9054 },
-                    'Актау': { lat: 43.6481, lng: 51.1722 },
-                    'Павлодар': { lat: 52.3001, lng: 76.9504 },
-                    'Уральск': { lat: 51.2333, lng: 51.3667 },
-                    'Усть-Каменогорск': { lat: 49.9501, lng: 82.6167 },
-                    'Тараз': { lat: 42.9000, lng: 71.3667 },
-                    'Семей': { lat: 50.4111, lng: 80.2501 },
-                    'Костанай': { lat: 53.2144, lng: 63.6244 },
-                    'Кызылорда': { lat: 44.8488, lng: 65.4822 },
-                    'Темиртау': { lat: 50.0544, lng: 72.9644 },
-                    'Кокшетау': { lat: 53.2833, lng: 69.4000 },
-                    'Балхаш': { lat: 46.8500, lng: 74.9667 },
-                    'Абай': { lat: 49.6333, lng: 72.8500 },
-                    'Сарань': { lat: 49.7917, lng: 72.8583 },
-                    'Шахтинск': { lat: 49.7111, lng: 72.5861 }
-                };
-
                 const currentCity = this.filters.city || 'Караганда';
-                const cityCenter = cityCenters[currentCity] || cityCenters['Караганда'];
+                const cityCenter = CITY_CENTERS[currentCity] || CITY_CENTERS['Караганда'];
                 let center = [cityCenter.lat, cityCenter.lng];
                 
                 if (this.filteredAndSortedServices.length > 0) {
@@ -1201,20 +1094,18 @@ createApp({
                     }
                 }
                 
-                this.map = L.map('map-container', { attributionControl: false }).setView(center, 12);
+                // Зум поднят до 14, чтобы сразу было лучше видно улицы
+                this.map = L.map('map-container', { attributionControl: false }).setView(center, 14);
                 
-                // Используем высокодетализированные и надежные тайлы CartoDB, подстраивающиеся под светлую/темную тему приложения
-                const tileUrl = this.isDarkMode 
-                    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+                // ИНТЕГРАЦИЯ 2GIS: Используем точные тайлы
+                const tileUrl = 'https://tile{s}.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=1';
                 
                 L.tileLayer(tileUrl, {
-                    subdomains: 'abcd',
+                    subdomains: ['0', '1', '2', '3'],
                     maxZoom: 19,
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    attribution: '&copy; <a href="https://2gis.kz">2GIS</a>'
                 }).addTo(this.map);
                 
-                // Добавляем маркеры клиник с предотвращением наложения (коллизий)
                 const addedCoordinates = [];
                 const validMarkers = [];
 
@@ -1224,8 +1115,6 @@ createApp({
                         let longitude = parseFloat(item.lng);
                         if (isNaN(latitude) || isNaN(longitude)) return;
 
-                        // Сверяем расстояние до центра выбранного города.
-                        // Если маркер находится дальше 40 км, мы принудительно рассчитываем его координаты заново для этого города.
                         const distanceToCenter = this.getDistance(latitude, longitude, cityCenter.lat, cityCenter.lng);
                         if (distanceToCenter > 40) {
                             const fallback = this.getClinicCoordinates(item.clinic, currentCity, item.address || '');
@@ -1233,7 +1122,6 @@ createApp({
                             longitude = fallback.lng;
                         }
 
-                        // Если координаты совпадают с уже добавленными, делаем мизерный сдвиг (на 10-15 метров)
                         const coordKey = `${latitude.toFixed(5)}_${longitude.toFixed(5)}`;
                         if (addedCoordinates.includes(coordKey)) {
                             latitude += (Math.random() - 0.5) * 0.00015;
@@ -1242,7 +1130,6 @@ createApp({
                         addedCoordinates.push(`${latitude.toFixed(5)}_${longitude.toFixed(5)}`);
                         validMarkers.push([latitude, longitude]);
 
-                        // Определяем иконку маркера на основе категории услуги для максимальной наглядности
                         let iconHtml = '';
                         const catLower = (item.category || '').toLowerCase();
                         if (catLower.includes('лаборатор') || catLower.includes('анализ') || catLower.includes('lab')) {
@@ -1257,7 +1144,6 @@ createApp({
                             iconHtml = '<i class="fa-solid fa-house-medical text-xs"></i>';
                         }
 
-                        // Создаем красивый DivIcon с пульсирующим эффектом и кастомной иконкой категории
                         const customIcon = L.divIcon({
                             html: `
                                 <div class="relative flex items-center justify-center">
@@ -1292,7 +1178,6 @@ createApp({
                     }
                 });
 
-                // Автоматически фокусируем карту на всех добавленных маркерах
                 if (validMarkers.length > 0) {
                     const bounds = L.latLngBounds(validMarkers);
                     this.map.fitBounds(bounds, { padding: [40, 40] });
@@ -1308,13 +1193,10 @@ createApp({
         }
         this.loadSubscriptions();
         
-        // Тестируем соединение с реальным API бэкенда (FastAPI) при старте
         this.testApiConnection();
-
-        // Автоматическое определение геолокации при входе
+        this.fetchSuggestions();
         this.detectUserLocation();
 
-        // Закрытие выпадающего списка городов при клике вне его области
         document.addEventListener('click', (e) => {
             const container = document.getElementById('city-selector-container');
             if (container && !container.contains(e.target)) {
@@ -1322,7 +1204,6 @@ createApp({
             }
         });
 
-        // Слушатель для открытия деталей из бабблов на карте
         window.addEventListener('show-clinic-details', (e) => {
             const clinicId = e.detail;
             const item = this.services.find(s => String(s.id) === String(clinicId));

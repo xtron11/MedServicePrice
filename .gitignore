@@ -15,7 +15,6 @@ env/
 *$py.class
 
 # Временные HTML файлы и локальные дампы парсеров
-*.html
 *.log
 
 # Настройки сред разработки (VS Code / Cursor / PyCharm)
