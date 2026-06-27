@@ -2,6 +2,17 @@
 
 const { createApp } = Vue;
 
+const POPULAR_SUGGESTIONS = [
+    "Общий анализ крови",
+    "Биохимический анализ крови",
+    "МРТ головного мозга",
+    "МРТ позвоночника",
+    "УЗИ брюшной полости",
+    "УЗИ сердца (ЭхоКГ)",
+    "Прием терапевта",
+    "Прием кардиолога"
+];
+
 const CITY_MAP = {
     'abay': 'Абай',
     'aktau': 'Актау',
@@ -36,12 +47,23 @@ function getLatinCity(cyrillicName) {
     return cyrillicName.toLowerCase();
 }
 
+function safeParseDate(dateStr) {
+    if (!dateStr) return new Date();
+    // Handle DD.MM.YYYY
+    const match = String(dateStr).trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (match) {
+        return new Date(`${match[3]}-${match[2]}-${match[1]}`);
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? new Date() : d;
+}
+
 createApp({
     data() {
         return {
             searchQuery: '',
             services: [],
-            suggestions: typeof MOCK_SUGGESTIONS !== 'undefined' ? MOCK_SUGGESTIONS : [], 
+            suggestions: POPULAR_SUGGESTIONS,
             isLoading: false,
             hasSearched: false, 
             isDarkMode: false,
@@ -67,12 +89,13 @@ createApp({
             activeSubscriptions: [],
             
             filters: {
-                city: 'Караганда',
+                city: 'Алматы',
                 category: '',
                 minPrice: null,
                 maxPrice: null,
                 minRating: 0,
-                onlineBooking: false
+                onlineBooking: false,
+                searchType: 'service' // 'service', 'doctor'
             },
             sortBy: 'price_asc',
 
@@ -80,18 +103,33 @@ createApp({
             userLatitude: null,
             userLongitude: null,
             isLocating: false,
+            geoToast: {
+                show: false,
+                city: ''
+            },
 
             // Сравнение клиник
             comparisonList: [],
             isCompareModalOpen: false,
             isMobileFiltersOpen: false,
             isCityDropdownOpen: false,
-            availableCities: ['Караганда', 'Астана', 'Алматы'],
+            isCityModalOpen: false,
+            isCityConfirmModalOpen: false,
+            detectedCity: 'Караганда',
+            citySearchQuery: '',
+            availableCities: ['Алматы', 'Астана', 'Караганда', 'Шымкент', 'Актобе', 'Атырау', 'Актау', 'Павлодар', 'Уральск', 'Усть-Каменогорск', 'Тараз', 'Семей', 'Костанай', 'Кызылорда', 'Темиртау', 'Кокшетау', 'Балхаш', 'Абай', 'Сарань', 'Шахтинск'],
             
             // Настройки подключения к реальному API бэкенда (Swagger FastAPI)
+            isApiSettingsModalOpen: false,
+            tempApiUrl: localStorage.getItem('med_api_url') || 'http://127.0.0.1:8000',
             apiUrl: localStorage.getItem('med_api_url') || 'http://127.0.0.1:8000',
             isApiConnected: false,
-            categoriesList: ['Анализы', 'МРТ/КТ', 'УЗИ', 'Прием врача'],
+            categoriesList: [
+                { value: 'laboratory', label: 'Лаборатория' },
+                { value: 'doctor', label: 'Приём врача' },
+                { value: 'diagnostics', label: 'Диагностика' },
+                { value: 'procedure', label: 'Процедура' }
+            ],
 
             // Популярные услуги для быстрого поиска на главной
             popularServices: [
@@ -120,7 +158,24 @@ createApp({
         filteredAndSortedServices() {
             let result = this.services.filter(item => {
                 if (item.city !== this.filters.city) return false;
-                if (this.filters.category && item.category !== this.filters.category) return false;
+                
+                // Фильтрация по категории с гибким маппингом (поддерживает и русский, и английский)
+                if (this.filters.category) {
+                    const catVal = this.filters.category.toLowerCase().trim();
+                    const itemCat = (item.category || '').toLowerCase().trim();
+                    
+                    const catMapping = {
+                        'laboratory': ['laboratory', 'лаборатория', 'анализы', 'анализ'],
+                        'doctor': ['doctor', 'прием врача', 'приём врача', 'врач', 'консультация', 'прием'],
+                        'diagnostics': ['diagnostics', 'диагностика', 'мрт/кт', 'узи', 'мрт', 'кт', 'рентген'],
+                        'procedure': ['procedure', 'процедура', 'процедуры', 'капельница', 'укол']
+                    };
+                    
+                    const allowed = catMapping[catVal] || [catVal];
+                    const isMatched = allowed.some(a => itemCat.includes(a) || a.includes(itemCat));
+                    if (!isMatched) return false;
+                }
+                
                 if (this.filters.minPrice && item.price < this.filters.minPrice) return false;
                 if (this.filters.maxPrice && item.price > this.filters.maxPrice) return false;
                 if (item.rating < this.filters.minRating) return false;
@@ -134,7 +189,7 @@ createApp({
                     case 'price_asc': return a.price - b.price;
                     case 'price_desc': return b.price - a.price;
                     case 'rating': return b.rating - a.rating;
-                    case 'date': return new Date(b.last_updated) - new Date(a.last_updated);
+                    case 'date': return safeParseDate(b.last_updated) - safeParseDate(a.last_updated);
                     case 'distance': 
                         if (this.userLatitude && this.userLongitude) {
                             const distA = this.getDistance(this.userLatitude, this.userLongitude, a.lat, a.lng) || 99999;
@@ -178,6 +233,11 @@ createApp({
             if (!this.filters.city) return this.availableCities;
             const query = this.filters.city.toLowerCase().trim();
             return this.availableCities.filter(city => city.toLowerCase().includes(query));
+        },
+        filteredModalCities() {
+            if (!this.citySearchQuery) return this.availableCities;
+            const query = this.citySearchQuery.toLowerCase().trim();
+            return this.availableCities.filter(city => city.toLowerCase().includes(query));
         }
     },
     watch: {
@@ -216,8 +276,37 @@ createApp({
             return price.toLocaleString('ru-RU');
         },
         formatDate(dateString) {
+            const date = safeParseDate(dateString);
             const options = { day: 'numeric', month: 'short', year: 'numeric' };
-            return new Date(dateString).toLocaleDateString('ru-RU', options);
+            return date.toLocaleDateString('ru-RU', options);
+        },
+        getLatestParsingDate() {
+            if (!this.filteredAndSortedServices || this.filteredAndSortedServices.length === 0) {
+                return null;
+            }
+            
+            let latestDate = null;
+            let latestTime = 0;
+            
+            for (const item of this.filteredAndSortedServices) {
+                const dateStr = item.last_updated;
+                if (!dateStr) continue;
+                
+                const date = safeParseDate(dateStr);
+                if (date && !isNaN(date.getTime())) {
+                    if (date.getTime() > latestTime) {
+                        latestTime = date.getTime();
+                        latestDate = date;
+                    }
+                }
+            }
+            
+            if (latestDate) {
+                const options = { day: 'numeric', month: 'long', year: 'numeric' };
+                return latestDate.toLocaleDateString('ru-RU', options);
+            }
+            
+            return null;
         },
         toggleTheme() {
             this.isDarkMode = !this.isDarkMode;
@@ -239,6 +328,356 @@ createApp({
         selectCity(city) {
             this.filters.city = city;
             this.isCityDropdownOpen = false;
+            localStorage.setItem('selected_city', city);
+            localStorage.setItem('city_confirmed', 'true');
+            this.isCityConfirmModalOpen = false;
+            if (this.hasSearched) {
+                this.searchServices();
+            }
+        },
+        confirmGuessedCity(isCorrect) {
+            if (isCorrect) {
+                localStorage.setItem('selected_city', this.detectedCity);
+                localStorage.setItem('city_confirmed', 'true');
+                this.filters.city = this.detectedCity;
+                this.isCityConfirmModalOpen = false;
+                this.showNotification("Город подтвержден", `Выбран город ${this.detectedCity}`, "success");
+                if (this.hasSearched) {
+                    this.searchServices();
+                }
+            } else {
+                this.isCityConfirmModalOpen = false;
+                this.openCityModal();
+            }
+        },
+        openCityModal() {
+            this.isCityModalOpen = true;
+            this.citySearchQuery = '';
+        },
+        selectCityFromModal(city) {
+            this.selectCity(city);
+            this.isCityModalOpen = false;
+        },
+        confirmGeoCity() {
+            localStorage.setItem('selected_city', this.filters.city);
+            this.geoToast.show = false;
+            this.showNotification("Город подтвержден", `Выбран город ${this.filters.city}`, "success");
+            if (this.hasSearched) {
+                this.searchServices();
+            }
+        },
+        changeGeoCity() {
+            this.geoToast.show = false;
+            this.openCityModal();
+        },
+        openApiSettingsModal() {
+            this.isApiSettingsModalOpen = true;
+            this.tempApiUrl = this.apiUrl;
+        },
+        async testAndSaveApiSettings() {
+            let url = this.tempApiUrl.trim();
+            if (url.endsWith('/')) {
+                url = url.slice(0, -1);
+            }
+            if (!url) {
+                this.showNotification("Ошибка", "Адрес API не может быть пустым", "error");
+                return;
+            }
+
+            this.showNotification("Проверка...", "Тестирование подключения к API...", "info");
+            
+            // Настраиваем адрес в модуле API
+            MedicalApi.setBaseUrl(url);
+            
+            const isConnected = await MedicalApi.testConnection();
+            
+            this.apiUrl = url;
+            if (isConnected) {
+                this.isApiConnected = true;
+                this.isApiSettingsModalOpen = false;
+                this.showNotification("Успешно!", "Соединение с API установлено. Изменения сохранены.", "success");
+                
+                await this.testApiConnection();
+                if (this.hasSearched) {
+                    this.searchServices();
+                }
+            } else {
+                this.isApiConnected = false;
+                this.showNotification("Сохранено с предупреждением", "Адрес сохранен, но бэкенд недоступен или заблокирован (проверьте Mixed Content / CORS). Используется локальная демо-база данных.", "warning");
+            }
+        },
+        resetApiSettingsToDefault() {
+            const defaultUrl = 'http://127.0.0.1:8000';
+            this.tempApiUrl = defaultUrl;
+            this.apiUrl = defaultUrl;
+            MedicalApi.setBaseUrl(defaultUrl);
+            this.isApiConnected = false;
+            this.showNotification("Сброшено", "Адрес API сброшен на стандартный http://127.0.0.1:8000. Включен демонстрационный режим.", "info");
+        },
+        
+        // Получить реалистичные координаты для клиники, если они отсутствуют на бэкенде
+        getClinicCoordinates(clinicName, cityName, address = '') {
+            const cityCenters = {
+                'Алматы': { lat: 43.2389, lng: 76.8897 },
+                'Астана': { lat: 51.1693, lng: 71.4491 },
+                'Караганда': { lat: 49.8019, lng: 73.1021 },
+                'Шымкент': { lat: 42.3249, lng: 69.5901 },
+                'Актобе': { lat: 50.2839, lng: 57.1669 },
+                'Атырау': { lat: 47.0945, lng: 51.9054 },
+                'Актау': { lat: 43.6481, lng: 51.1722 },
+                'Павлодар': { lat: 52.3001, lng: 76.9504 },
+                'Уральск': { lat: 51.2333, lng: 51.3667 },
+                'Усть-Каменогорск': { lat: 49.9501, lng: 82.6167 },
+                'Тараз': { lat: 42.9000, lng: 71.3667 },
+                'Семей': { lat: 50.4111, lng: 80.2501 },
+                'Костанай': { lat: 53.2144, lng: 63.6244 },
+                'Кызылорда': { lat: 44.8488, lng: 65.4822 },
+                'Темиртау': { lat: 50.0544, lng: 72.9644 },
+                'Кокшетау': { lat: 53.2833, lng: 69.4000 },
+                'Балхаш': { lat: 46.8500, lng: 74.9667 },
+                'Абай': { lat: 49.6333, lng: 72.8500 },
+                'Сарань': { lat: 49.7917, lng: 72.8583 },
+                'Шахтинск': { lat: 49.7111, lng: 72.5861 }
+            };
+
+            const center = cityCenters[cityName] || cityCenters['Караганда'];
+            let baseLat = center.lat;
+            let baseLng = center.lng;
+            
+            const addressHash = address ? address.toLowerCase().trim() : '';
+            
+            // Высокоточное геокодирование для ключевых адресов в Караганде
+            if (cityName === 'Караганда') {
+                if (addressHash.includes('гоголя') && addressHash.includes('41')) {
+                    return { lat: 49.811565, lng: 73.099195 };
+                }
+                if (addressHash.includes('сейфуллина') && addressHash.includes('17')) {
+                    return { lat: 49.792842, lng: 73.080536 };
+                }
+                if (addressHash.includes('гоголя') && (addressHash.includes('50/1') || addressHash.includes('50 / 1'))) {
+                    return { lat: 49.8111, lng: 73.0864 };
+                }
+            }
+            
+            const clinicHash = clinicName.toLowerCase().trim();
+            if (cityName === 'Караганда') {
+                if (clinicHash.includes('олимп') || clinicHash.includes('olymp')) {
+                    baseLat = 49.8077; baseLng = 73.0885;
+                } else if (clinicHash.includes('invivo') || clinicHash.includes('инвиво')) {
+                    baseLat = 49.8032; baseLng = 73.0841;
+                } else if (clinicHash.includes('инвитро') || clinicHash.includes('invitro')) {
+                    baseLat = 49.8055; baseLng = 73.0920;
+                } else if (clinicHash.includes('гиппократ') || clinicHash.includes('hippokrat')) {
+                    baseLat = 49.8091; baseLng = 73.1012;
+                }
+            } else if (cityName === 'Астана') {
+                if (clinicHash.includes('олимп') || clinicHash.includes('olymp')) {
+                    baseLat = 51.1605; baseLng = 71.4302;
+                } else if (clinicHash.includes('invivo') || clinicHash.includes('инвиво')) {
+                    baseLat = 51.1555; baseLng = 71.4422;
+                } else if (clinicHash.includes('инвитро') || clinicHash.includes('invitro')) {
+                    baseLat = 51.1685; baseLng = 71.4255;
+                }
+            } else if (cityName === 'Алматы') {
+                if (clinicHash.includes('олимп') || clinicHash.includes('olymp')) {
+                    baseLat = 43.2425; baseLng = 76.9012;
+                } else if (clinicHash.includes('invivo') || clinicHash.includes('инвиво')) {
+                    baseLat = 43.2312; baseLng = 76.8795;
+                } else if (clinicHash.includes('инвитро') || clinicHash.includes('invitro')) {
+                    baseLat = 43.2515; baseLng = 76.9150;
+                }
+            } else {
+                // Псевдослучайное детерминированное распределение на основе названия
+                let hash = 0;
+                for (let i = 0; i < clinicName.length; i++) {
+                    hash = clinicName.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const latOffset = ((Math.abs(hash) % 100) / 4000) - 0.0125;
+                const lngOffset = (((Math.abs(hash) >> 8) % 100) / 4000) - 0.0125;
+                baseLat = center.lat + latOffset;
+                baseLng = center.lng + lngOffset;
+            }
+
+            // Добавляем микросмещение на основе адреса, чтобы разные филиалы одного бренда не сливались на карте
+            if (address) {
+                let h = 0;
+                for (let i = 0; i < address.length; i++) {
+                    h = address.charCodeAt(i) + ((h << 5) - h);
+                }
+                const latOffset = ((Math.abs(h) % 100) / 20000) - 0.0025; // Очень легкое смещение до 200 метров
+                const lngOffset = (((Math.abs(h) >> 8) % 100) / 20000) - 0.0025;
+                return {
+                    lat: baseLat + latOffset,
+                    lng: baseLng + lngOffset
+                };
+            }
+
+            return { lat: baseLat, lng: baseLng };
+        },
+        
+        // Высокоточное динамическое геокодирование по тексту адреса через OSM Nominatim и локальный словарь
+        async geocodeAddress(address, city) {
+            const addressClean = address.toLowerCase().trim();
+            const cityClean = city.toLowerCase().trim();
+
+            // 1. Высокоточные хардкод-координаты для Караганды
+            if (cityClean === 'караганда') {
+                if (addressClean.includes('гоголя') && addressClean.includes('41')) {
+                    return { lat: 49.811565, lng: 73.099195 };
+                }
+                if (addressClean.includes('сейфуллина') && addressClean.includes('17')) {
+                    return { lat: 49.792842, lng: 73.080536 };
+                }
+                if (addressClean.includes('гоголя') && (addressClean.includes('50/1') || addressClean.includes('50 / 1'))) {
+                    return { lat: 49.8111, lng: 73.0864 };
+                }
+                if (addressClean.includes('алиханова') && addressClean.includes('2')) {
+                    return { lat: 49.8082, lng: 73.0898 };
+                }
+                if (addressClean.includes('бухар') && addressClean.includes('45')) {
+                    return { lat: 49.8055, lng: 73.0872 };
+                }
+                if (addressClean.includes('шахтеров') && addressClean.includes('21')) {
+                    return { lat: 49.7825, lng: 73.1415 };
+                }
+                if (addressClean.includes('строителей') && addressClean.includes('28')) {
+                    return { lat: 49.7891, lng: 73.1294 };
+                }
+                if (addressClean.includes('кривогуза') && addressClean.includes('10')) {
+                    return { lat: 49.7984, lng: 73.0722 };
+                }
+                if (addressClean.includes('ерубаева') && addressClean.includes('48')) {
+                    return { lat: 49.8050, lng: 73.0880 };
+                }
+            }
+            
+            // 2. Высокоточные хардкод-координаты для Алматы
+            if (cityClean === 'алматы') {
+                if (addressClean.includes('толе би') && addressClean.includes('99')) {
+                    return { lat: 43.2514, lng: 76.9298 };
+                }
+                if (addressClean.includes('абая') && addressClean.includes('10')) {
+                    return { lat: 43.2425, lng: 76.9535 };
+                }
+            }
+
+            // 3. Динамический запрос к Nominatim API
+            try {
+                // Очищаем адрес от лишней разметки для лучшего сопоставления
+                let searchStr = address.replace(/(кабинет|офис|этаж|блок|бутик|квартира)\s*\d+/gi, '').trim();
+                
+                // Удаляем повторяющиеся упоминания городов во избежание путаницы у Nominatim
+                const cleanPhrases = [
+                    `г. ${cityClean}`, `г.${cityClean}`, `город ${cityClean}`, cityClean,
+                    'казахстан', 'республика казахстан', 'republic of kazakhstan'
+                ];
+                cleanPhrases.forEach(phrase => {
+                    const escapedPhrase = phrase.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                    const regex = new RegExp(`(^|[^a-яА-ЯёЁa-zA-Z0-9])(${escapedPhrase})(?![a-яА-ЯёЁa-zA-Z0-9])`, 'gi');
+                    searchStr = searchStr.replace(regex, '$1');
+                });
+                
+                // Убираем лишние запятые, точки и пробелы по краям
+                searchStr = searchStr.replace(/^[,\s.]+/, '').replace(/[,\s.]+$/, '').replace(/,\s*,/g, ',').trim();
+                
+                // Если после очистки ничего не осталось, используем исходный очищенный адрес
+                if (!searchStr) {
+                    searchStr = address.replace(/(кабинет|офис|этаж|блок|бутик|квартира)\s*\d+/gi, '').trim();
+                }
+
+                const query = `${city}, ${searchStr}`;
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+                
+                const res = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'MedServicePriceApp/1.0'
+                    }
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.length > 0) {
+                        const lat = parseFloat(data[0].lat);
+                        const lng = parseFloat(data[0].lon);
+                        
+                        // Защитный механизм: сверяем расстояние с центром города.
+                        // Если расстояние больше 30 км, значит Nominatim нашел объект в другом городе/регионе (например, Балхаш вместо Караганды).
+                        const cityCenters = {
+                            'Алматы': { lat: 43.2389, lng: 76.8897 },
+                            'Астана': { lat: 51.1693, lng: 71.4491 },
+                            'Караганда': { lat: 49.8019, lng: 73.1021 },
+                            'Шымкент': { lat: 42.3249, lng: 69.5901 },
+                            'Актобе': { lat: 50.2839, lng: 57.1669 },
+                            'Атырау': { lat: 47.0945, lng: 51.9054 },
+                            'Актау': { lat: 43.6481, lng: 51.1722 },
+                            'Павлодар': { lat: 52.3001, lng: 76.9504 },
+                            'Уральск': { lat: 51.2333, lng: 51.3667 },
+                            'Усть-Каменогорск': { lat: 49.9501, lng: 82.6167 },
+                            'Тараз': { lat: 42.9000, lng: 71.3667 },
+                            'Семей': { lat: 50.4111, lng: 80.2501 },
+                            'Костанай': { lat: 53.2144, lng: 63.6244 },
+                            'Кызылорда': { lat: 44.8488, lng: 65.4822 },
+                            'Темиртау': { lat: 50.0544, lng: 72.9644 },
+                            'Кокшетау': { lat: 53.2833, lng: 69.4000 },
+                            'Балхаш': { lat: 46.8500, lng: 74.9667 },
+                            'Абай': { lat: 49.6333, lng: 72.8500 },
+                            'Сарань': { lat: 49.7917, lng: 72.8583 },
+                            'Шахтинск': { lat: 49.7111, lng: 72.5861 }
+                        };
+                        
+                        const center = cityCenters[city] || cityCenters['Караганда'];
+                        const dist = this.getDistance(lat, lng, center.lat, center.lng);
+                        
+                        if (dist > 30) {
+                            console.warn(`Геокодированный адрес "${address}" находится слишком далеко (${dist} км) от центра города ${city}. Игнорируем некорректные координаты.`);
+                            return null;
+                        }
+                        
+                        return { lat, lng };
+                    }
+                }
+            } catch (e) {
+                console.warn("Dynamic OSM geocoding failed, keeping local fallback coordinates:", e.message);
+            }
+
+            return null; // Возвращаем null при неудаче, чтобы использовать стабильные базовые координаты без сдвигов
+        },
+
+        // Запуск асинхронного фонового геокодирования для всех найденных услуг
+        async geocodeAllServices() {
+            const geocodeCache = {};
+
+            for (let i = 0; i < this.services.length; i++) {
+                const item = this.services[i];
+                const address = item.address;
+                const city = this.filters.city;
+                
+                if (!address || address === 'Казахстан') continue;
+
+                const cacheKey = `${city}_${address}`;
+                if (geocodeCache[cacheKey]) {
+                    const coords = geocodeCache[cacheKey];
+                    item.lat = coords.lat;
+                    item.lng = coords.lng;
+                    continue;
+                }
+
+                const coords = await this.geocodeAddress(address, city);
+                if (coords) {
+                    geocodeCache[cacheKey] = coords;
+                    item.lat = coords.lat;
+                    item.lng = coords.lng;
+                    
+                    // Обновляем маркеры на карте реактивно
+                    if (this.viewMode === 'map' && this.map) {
+                        this.initMap();
+                    }
+                }
+                
+                // Небольшой интервал во избежание блокировок API (300 мс)
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
         },
         
         // Расчет расстояния по формуле гаверсинусов (Haversine Formula)
@@ -477,83 +916,107 @@ createApp({
 
             const query = this.searchQuery.trim();
 
-            // Если реальное API подключено, делаем запрос к бэкенду
-            if (this.isApiConnected) {
-                try {
-                    const params = new URLSearchParams();
-                    params.append('query', query);
-                    if (this.filters.city) {
-                        params.append('city', getLatinCity(this.filters.city));
-                    }
-                    if (this.filters.category) {
-                        params.append('category', this.filters.category);
-                    }
-                    if (this.filters.minPrice !== null && this.filters.minPrice !== '') {
-                        params.append('min_price', this.filters.minPrice);
-                    }
-                    if (this.filters.maxPrice !== null && this.filters.maxPrice !== '') {
-                        params.append('max_price', this.filters.maxPrice);
-                    }
+            // Вызываем метод поиска из нашего api.js модуля
+            const data = await MedicalApi.searchServices({
+                query,
+                city: getLatinCity(this.filters.city),
+                category: this.filters.category,
+                minPrice: this.filters.minPrice,
+                maxPrice: this.filters.maxPrice
+            });
 
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 8000);
+            if (data && Array.isArray(data)) {
+                this.services = data.map((item, index) => {
+                    const clinicName = item.clinic || item.clinic_name || 'Клиника';
                     
-                    const response = await fetch(`${this.apiUrl}/api/search?${params.toString()}`, {
-                        signal: controller.signal
-                    });
-                    clearTimeout(timeoutId);
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (Array.isArray(data)) {
-                            // Маппим данные с бэкенда для обеспечения 100% совместимости с интерфейсом
-                            this.services = data.map((item, index) => ({
-                                id: item.id || index + 1000,
-                                clinic: item.clinic || item.clinic_name || 'Клиника',
-                                category: item.category || 'Общее',
-                                service_name: item.service_name || item.name || 'Медицинская услуга',
-                                city: item.city ? (CITY_MAP[item.city.toLowerCase()] || (item.city.charAt(0).toUpperCase() + item.city.slice(1))) : (this.filters.city || 'Караганда'),
-                                address: item.address || 'Казахстан',
-                                price: Number(item.price) || 0,
-                                website_url: item.website_url || '#',
-                                rating: Number(item.rating) || 4.5,
-                                working_hours: item.working_hours || '08:00 - 18:00',
-                                phone: item.phone || '+7 (700) 000-00-00',
-                                last_updated: item.last_updated || new Date().toISOString().split('T')[0],
-                                has_online_booking: item.has_online_booking || item.online_booking || false,
-                                lat: item.lat || item.latitude || null,
-                                lng: item.lng || item.longitude || null,
-                                price_history: item.price_history || [item.price]
-                            }));
-                            
-                            this.isLoading = false;
-                            if (this.viewMode === 'map') {
-                                this.initMap();
+                    let cityName = item.city ? (CITY_MAP[item.city.toLowerCase()] || (item.city.charAt(0).toUpperCase() + item.city.slice(1))) : '';
+                    
+                    // Если город пустой, попробуем определить по адресу клиники
+                    if (!cityName && item.address) {
+                        const addrLower = item.address.toLowerCase();
+                        for (const [latin, cyr] of Object.entries(CITY_MAP)) {
+                            // Отрезаем окончания или проверяем вхождение, например "караганд", "алмат", "астан"
+                            const root = cyr.slice(0, -1).toLowerCase(); // Караганд, Алмат, Астан
+                            if (addrLower.includes(root)) {
+                                cityName = cyr;
+                                break;
                             }
-                            return; // Выходим при успешном поиске
                         }
                     }
-                } catch (e) {
-                    console.warn("Backend API search failed, falling back to local database:", e);
-                }
-            }
+                    
+                    // Если все еще пустой, берем выбранный фильтр города
+                    if (!cityName) {
+                        cityName = this.filters.city || 'Алматы';
+                    }
+                    
+                    // Проверяем точный адрес для принудительного высокоточного позиционирования
+                    let lat = null;
+                    let lng = null;
+                    
+                    const addressStr = (item.address || '').toLowerCase();
+                    if (cityName === 'Караганда' || addressStr.includes('караганд')) {
+                        if (addressStr.includes('гоголя') && addressStr.includes('41')) {
+                            lat = 49.811565;
+                            lng = 73.099195;
+                        } else if (addressStr.includes('сейфуллина') && addressStr.includes('17')) {
+                            lat = 49.792842;
+                            lng = 73.080536;
+                        } else if (addressStr.includes('гоголя') && (addressStr.includes('50/1') || addressStr.includes('50 / 1'))) {
+                            lat = 49.8111;
+                            lng = 73.0864;
+                        }
+                    }
+                    
+                    // Если не переопределено точным адресом, используем координаты из API
+                    if (!lat || !lng) {
+                        lat = item.lat || item.latitude || null;
+                        lng = item.lng || item.longitude || null;
+                    }
+                    
+                    // Если нет в API, вычисляем по названию клиники
+                    if (!lat || !lng) {
+                        const calculated = this.getClinicCoordinates(clinicName, cityName, item.address || '');
+                        lat = calculated.lat;
+                        lng = calculated.lng;
+                    }
 
-            // РЕЗЕРВНЫЙ ДЕМО-РЕЖИМ (Фронтенд-поиск по MOCK_SERVICES)
-            setTimeout(() => {
-                const lowerQuery = query.toLowerCase();
-                const safeQuery = lowerQuery.replace(/ь/g, ''); 
-                
-                this.services = MOCK_SERVICES.filter(item => 
-                    item.service_name.toLowerCase().includes(safeQuery) ||
-                    item.clinic.toLowerCase().includes(safeQuery) ||
-                    item.category.toLowerCase().includes(safeQuery)
-                );
+                    return {
+                        id: item.id || index + 1000,
+                        clinic: clinicName,
+                        category: item.category || 'Общее',
+                        service_name: item.service_name || item.name || 'Медицинская услуга',
+                        city: cityName,
+                        address: item.address || 'Казахстан',
+                        price: Number(item.price) || 0,
+                        website_url: item.website_url || '#',
+                        rating: Number(item.rating) || 4.5,
+                        working_hours: item.working_hours || '08:00 - 18:00',
+                        phone: item.phone || '+7 (700) 000-00-00',
+                        last_updated: item.last_updated || new Date().toISOString().split('T')[0],
+                        has_online_booking: item.has_online_booking || item.online_booking || false,
+                        lat,
+                        lng,
+                        price_history: item.price_history || [item.price]
+                    };
+                });
                 
                 this.isLoading = false;
                 if (this.viewMode === 'map') {
                     this.initMap();
                 }
-            }, 400);
+                // Запускаем фоновое высокоточное геокодирование по текстовым адресам
+                this.geocodeAllServices();
+                return;
+            }
+
+            // Если бэкенд пуст или произошла ошибка
+            this.services = [];
+            this.isLoading = false;
+            this.showNotification(
+                "Результаты поиска",
+                "Не удалось получить предложения с сервера. Попробуйте обновить страницу или изменить запрос.",
+                "info"
+            );
         },
 
         toggleViewMode(mode) {
@@ -565,78 +1028,130 @@ createApp({
 
         // --- МЕТОДЫ ИНТЕГРАЦИИ С РЕАЛЬНЫМ API БЭКЕНДА (FASTAPI) ---
         async testApiConnection() {
+            // Прямой запрос списка городов без лишнего пинг-запроса для максимального быстродействия
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3500);
-                
-                const res = await fetch(`${this.apiUrl}/api/cities`, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                
-                if (res.ok) {
-                    this.isApiConnected = true;
-                    const data = await res.json();
+                const citiesData = await MedicalApi.getCities();
+                if (citiesData && Array.isArray(citiesData)) {
+                    const mappedCities = citiesData.map(latinName => {
+                        const mapped = CITY_MAP[latinName.toLowerCase()];
+                        return mapped || (latinName.charAt(0).toUpperCase() + latinName.slice(1));
+                    });
                     
-                    if (data && data.cities && Array.isArray(data.cities)) {
-                        const mappedCities = data.cities.map(latinName => {
-                            const mapped = CITY_MAP[latinName.toLowerCase()];
-                            return mapped || (latinName.charAt(0).toUpperCase() + latinName.slice(1));
-                        });
-                        
-                        if (mappedCities.length > 0) {
-                            this.availableCities = mappedCities;
-                            if (!this.availableCities.includes(this.filters.city)) {
-                                this.filters.city = this.availableCities[0];
-                            }
+                    if (mappedCities.length > 0) {
+                        this.availableCities = mappedCities;
+                        if (!this.availableCities.includes(this.filters.city)) {
+                            this.filters.city = this.availableCities[0];
                         }
                     }
-                    
-                    await this.fetchCategories();
-                } else {
-                    this.isApiConnected = false;
                 }
             } catch (e) {
-                console.warn("FastAPI backend is offline or unreachable:", e);
-                this.isApiConnected = false;
+                console.warn("Ошибка при получении списка городов с бэкенда:", e);
             }
+            
+            // Загрузка категорий услуг
+            await this.fetchCategories();
         },
 
         async fetchCities() {
             await this.testApiConnection();
         },
 
-        async fetchCategories() {
+        async detectUserLocation() {
+            // Если город уже сохранен пользователем и подтвержден, используем его
+            const saved = localStorage.getItem('selected_city');
+            const isConfirmed = localStorage.getItem('city_confirmed') === 'true';
+            
+            if (saved && this.availableCities.includes(saved)) {
+                this.filters.city = saved;
+                if (isConfirmed) {
+                    return;
+                }
+            }
+
+            // Попытка определить по IP (ip-api.com или ipapi.co)
+            let detected = 'Караганда'; // По умолчанию Караганда по запросу пользователя
             try {
-                const res = await fetch(`${this.apiUrl}/api/categories`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                const res = await fetch('https://ip-api.com/json/', { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
                 if (res.ok) {
                     const data = await res.json();
-                    if (Array.isArray(data) && data.length > 0) {
-                        this.categoriesList = data;
+                    if (data && data.city) {
+                        const englishCity = data.city.toLowerCase().trim();
+                        let cyrillicCity = '';
+                        for (const [latin, cyr] of Object.entries(CITY_MAP)) {
+                            if (latin === englishCity || englishCity.includes(latin) || latin.includes(englishCity)) {
+                                cyrillicCity = cyr;
+                                break;
+                            }
+                        }
+                        if (cyrillicCity && this.availableCities.includes(cyrillicCity)) {
+                            detected = cyrillicCity;
+                        }
                     }
                 }
             } catch (e) {
-                console.warn("fetchCategories error:", e);
+                console.warn("ip-api detection error, trying backup:", e);
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 2000);
+                    const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.city) {
+                            const englishCity = data.city.toLowerCase().trim();
+                            let cyrillicCity = '';
+                            for (const [latin, cyr] of Object.entries(CITY_MAP)) {
+                                if (latin === englishCity || englishCity.includes(latin) || latin.includes(englishCity)) {
+                                    cyrillicCity = cyr;
+                                    break;
+                                }
+                            }
+                            if (cyrillicCity && this.availableCities.includes(cyrillicCity)) {
+                                detected = cyrillicCity;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn("ipapi.co detection error:", err);
+                }
+            }
+
+            this.detectedCity = detected;
+            this.filters.city = detected;
+
+            // Открываем модальное окно подтверждения города
+            if (!isConfirmed) {
+                this.isCityConfirmModalOpen = true;
+            }
+        },
+
+        async fetchCategories() {
+            const categories = await MedicalApi.getCategories();
+            if (categories && Array.isArray(categories) && categories.length > 0) {
+                this.categoriesList = categories;
             }
         },
 
         async fetchSuggestions() {
             if (!this.searchQuery.trim()) {
-                this.suggestions = typeof MOCK_SUGGESTIONS !== 'undefined' ? MOCK_SUGGESTIONS : [];
+                this.suggestions = POPULAR_SUGGESTIONS;
                 return;
             }
-            if (this.isApiConnected) {
-                try {
-                    const query = encodeURIComponent(this.searchQuery.trim());
-                    const res = await fetch(`${this.apiUrl}/api/suggest?q=${query}&query=${query}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (Array.isArray(data)) {
-                            this.suggestions = data;
-                        }
-                    }
-                } catch (e) {
-                    console.warn("fetchSuggestions error:", e);
-                }
+            
+            const suggestions = await MedicalApi.getSuggestions(this.searchQuery);
+            if (suggestions && Array.isArray(suggestions) && suggestions.length > 0) {
+                this.suggestions = suggestions;
+                return;
             }
+            
+            // Локальный поиск по популярным предложениям
+            const lowerQuery = this.searchQuery.trim().toLowerCase();
+            this.suggestions = POPULAR_SUGGESTIONS.filter(s => s.toLowerCase().includes(lowerQuery));
         },
 
         initMap() {
@@ -649,34 +1164,126 @@ createApp({
                     this.map = null;
                 }
                 
-                // Центр карты по умолчанию
-                let center = [49.8019, 73.1021]; // Караганда
-                if (this.filters.city === 'Астана') center = [51.1693, 71.4491];
-                else if (this.filters.city === 'Алматы') center = [43.2389, 76.8897];
-                else if (this.filteredAndSortedServices.length > 0) {
+                const cityCenters = {
+                    'Алматы': { lat: 43.2389, lng: 76.8897 },
+                    'Астана': { lat: 51.1693, lng: 71.4491 },
+                    'Караганда': { lat: 49.8019, lng: 73.1021 },
+                    'Шымкент': { lat: 42.3249, lng: 69.5901 },
+                    'Актобе': { lat: 50.2839, lng: 57.1669 },
+                    'Атырау': { lat: 47.0945, lng: 51.9054 },
+                    'Актау': { lat: 43.6481, lng: 51.1722 },
+                    'Павлодар': { lat: 52.3001, lng: 76.9504 },
+                    'Уральск': { lat: 51.2333, lng: 51.3667 },
+                    'Усть-Каменогорск': { lat: 49.9501, lng: 82.6167 },
+                    'Тараз': { lat: 42.9000, lng: 71.3667 },
+                    'Семей': { lat: 50.4111, lng: 80.2501 },
+                    'Костанай': { lat: 53.2144, lng: 63.6244 },
+                    'Кызылорда': { lat: 44.8488, lng: 65.4822 },
+                    'Темиртау': { lat: 50.0544, lng: 72.9644 },
+                    'Кокшетау': { lat: 53.2833, lng: 69.4000 },
+                    'Балхаш': { lat: 46.8500, lng: 74.9667 },
+                    'Абай': { lat: 49.6333, lng: 72.8500 },
+                    'Сарань': { lat: 49.7917, lng: 72.8583 },
+                    'Шахтинск': { lat: 49.7111, lng: 72.5861 }
+                };
+
+                const currentCity = this.filters.city || 'Караганда';
+                const cityCenter = cityCenters[currentCity] || cityCenters['Караганда'];
+                let center = [cityCenter.lat, cityCenter.lng];
+                
+                if (this.filteredAndSortedServices.length > 0) {
                     const first = this.filteredAndSortedServices[0];
                     if (first.lat && first.lng) {
-                        center = [first.lat, first.lng];
+                        const distToFirst = this.getDistance(first.lat, first.lng, cityCenter.lat, cityCenter.lng);
+                        if (distToFirst < 40) {
+                            center = [first.lat, first.lng];
+                        }
                     }
                 }
                 
-                this.map = L.map('map-container').setView(center, 12);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                this.map = L.map('map-container', { attributionControl: false }).setView(center, 12);
+                
+                // Используем высокодетализированные и надежные тайлы CartoDB, подстраивающиеся под светлую/темную тему приложения
+                const tileUrl = this.isDarkMode 
+                    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+                
+                L.tileLayer(tileUrl, {
+                    subdomains: 'abcd',
                     maxZoom: 19,
-                    attribution: '© OpenStreetMap'
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 }).addTo(this.map);
                 
-                // Добавляем маркеры клиник
+                // Добавляем маркеры клиник с предотвращением наложения (коллизий)
+                const addedCoordinates = [];
+                const validMarkers = [];
+
                 this.filteredAndSortedServices.forEach(item => {
                     if (item.lat && item.lng) {
-                        const marker = L.marker([item.lat, item.lng]).addTo(this.map);
+                        let latitude = parseFloat(item.lat);
+                        let longitude = parseFloat(item.lng);
+                        if (isNaN(latitude) || isNaN(longitude)) return;
+
+                        // Сверяем расстояние до центра выбранного города.
+                        // Если маркер находится дальше 40 км, мы принудительно рассчитываем его координаты заново для этого города.
+                        const distanceToCenter = this.getDistance(latitude, longitude, cityCenter.lat, cityCenter.lng);
+                        if (distanceToCenter > 40) {
+                            const fallback = this.getClinicCoordinates(item.clinic, currentCity, item.address || '');
+                            latitude = fallback.lat;
+                            longitude = fallback.lng;
+                        }
+
+                        // Если координаты совпадают с уже добавленными, делаем мизерный сдвиг (на 10-15 метров)
+                        const coordKey = `${latitude.toFixed(5)}_${longitude.toFixed(5)}`;
+                        if (addedCoordinates.includes(coordKey)) {
+                            latitude += (Math.random() - 0.5) * 0.00015;
+                            longitude += (Math.random() - 0.5) * 0.00015;
+                        }
+                        addedCoordinates.push(`${latitude.toFixed(5)}_${longitude.toFixed(5)}`);
+                        validMarkers.push([latitude, longitude]);
+
+                        // Определяем иконку маркера на основе категории услуги для максимальной наглядности
+                        let iconHtml = '';
+                        const catLower = (item.category || '').toLowerCase();
+                        if (catLower.includes('лаборатор') || catLower.includes('анализ') || catLower.includes('lab')) {
+                            iconHtml = '<i class="fa-solid fa-flask text-xs"></i>';
+                        } else if (catLower.includes('врач') || catLower.includes('прием') || catLower.includes('doc')) {
+                            iconHtml = '<i class="fa-solid fa-user-doctor text-xs"></i>';
+                        } else if (catLower.includes('диагност') || catLower.includes('узи') || catLower.includes('мрт') || catLower.includes('diag')) {
+                            iconHtml = '<i class="fa-solid fa-heart-pulse text-xs"></i>';
+                        } else if (catLower.includes('процедур') || catLower.includes('укол') || catLower.includes('proc')) {
+                            iconHtml = '<i class="fa-solid fa-syringe text-xs"></i>';
+                        } else {
+                            iconHtml = '<i class="fa-solid fa-house-medical text-xs"></i>';
+                        }
+
+                        // Создаем красивый DivIcon с пульсирующим эффектом и кастомной иконкой категории
+                        const customIcon = L.divIcon({
+                            html: `
+                                <div class="relative flex items-center justify-center">
+                                    <div class="absolute w-8 h-8 rounded-full bg-blue-500/20 dark:bg-blue-400/20 animate-ping" style="animation-duration: 3s;"></div>
+                                    <div class="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 dark:bg-blue-500 text-white shadow-[0_4px_12px_rgba(59,130,246,0.3)] border-2 border-white dark:border-slate-800 hover:scale-110 hover:bg-blue-700 dark:hover:bg-blue-600 transition-all cursor-pointer">
+                                        ${iconHtml}
+                                    </div>
+                                </div>
+                            `,
+                            className: 'custom-leaflet-marker',
+                            iconSize: [36, 36],
+                            iconAnchor: [18, 36],
+                            popupAnchor: [0, -36]
+                        });
+
+                        const marker = L.marker([latitude, longitude], { icon: customIcon }).addTo(this.map);
                         const popupContent = `
-                            <div class="p-2 min-w-[200px]">
-                                <h4 class="font-bold text-slate-900 text-sm mb-1">${item.clinic}</h4>
-                                <p class="text-xs text-blue-600 font-bold mb-1">${item.service_name}</p>
-                                <div class="text-sm font-black text-slate-900 mb-1">Цена: ${this.formatPrice(item.price)} ₸</div>
-                                <div class="text-[10px] text-slate-500 mb-2">📍 ${item.address}</div>
-                                <button onclick="window.dispatchEvent(new CustomEvent('show-clinic-details', {detail: ${item.id}}))" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors cursor-pointer">
+                            <div class="p-1 min-w-[210px] dark:text-slate-200">
+                                <h4 class="font-extrabold text-slate-900 dark:text-white text-sm mb-1 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-all line-clamp-2" onclick="window.dispatchEvent(new CustomEvent('show-clinic-details', {detail: '${item.id}'}))">${item.clinic}</h4>
+                                <p class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-bold mb-2 cursor-pointer underline transition-all line-clamp-2" onclick="window.dispatchEvent(new CustomEvent('show-clinic-details', {detail: '${item.id}'}))">${item.service_name}</p>
+                                <div class="text-sm font-black text-slate-900 dark:text-slate-100 mb-1.5">Цена: <span class="text-blue-600 dark:text-blue-400 font-black">${this.formatPrice(item.price)} ₸</span></div>
+                                <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-3 flex items-start gap-1">
+                                    <span>📍</span>
+                                    <span class="line-clamp-2">${item.address}</span>
+                                </div>
+                                <button onclick="window.dispatchEvent(new CustomEvent('show-clinic-details', {detail: '${item.id}'}))" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer shadow-sm shadow-blue-500/20 hover:shadow-md">
                                     Подробнее и Контакты
                                 </button>
                             </div>
@@ -684,6 +1291,12 @@ createApp({
                         marker.bindPopup(popupContent);
                     }
                 });
+
+                // Автоматически фокусируем карту на всех добавленных маркерах
+                if (validMarkers.length > 0) {
+                    const bounds = L.latLngBounds(validMarkers);
+                    this.map.fitBounds(bounds, { padding: [40, 40] });
+                }
             });
         }
     },
@@ -698,6 +1311,9 @@ createApp({
         // Тестируем соединение с реальным API бэкенда (FastAPI) при старте
         this.testApiConnection();
 
+        // Автоматическое определение геолокации при входе
+        this.detectUserLocation();
+
         // Закрытие выпадающего списка городов при клике вне его области
         document.addEventListener('click', (e) => {
             const container = document.getElementById('city-selector-container');
@@ -709,7 +1325,7 @@ createApp({
         // Слушатель для открытия деталей из бабблов на карте
         window.addEventListener('show-clinic-details', (e) => {
             const clinicId = e.detail;
-            const item = this.services.find(s => s.id === clinicId);
+            const item = this.services.find(s => String(s.id) === String(clinicId));
             if (item) {
                 this.openModal(item);
             }
