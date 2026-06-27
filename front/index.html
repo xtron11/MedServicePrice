@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="ru" :class="{ 'dark': isDarkMode }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedServicePrice.kz – Сравнение цен на медицинские услуги</title>
+    
+    <!-- Подключаем Vue.js 3 и Tailwind CSS -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#1e293b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="text-slate-800 dark:text-slate-200 font-sans min-h-screen transition-colors duration-300 relative overflow-x-hidden">
+
+    <!-- Улучшенный и разнообразный фоновый дизайн с многослойной сеткой, цветными сферами и плавающей геометрией -->
+    <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <!-- Тонкая полупрозрачная линейная сетка -->
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.08)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(51,65,85,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(51,65,85,0.15)_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+        
+        <!-- Дополнительная сверхтонкая точечная сетка для добавления глубины и деталей -->
+        <div class="absolute inset-0 bg-[radial-gradient(rgba(148,163,184,0.07)_1px,transparent_1px)] dark:bg-[radial-gradient(rgba(51,65,85,0.12)_1px,transparent_1px)] bg-[size:1rem_1rem] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_30%,#000_60%,transparent_100%)]"></div>
+
+        <!-- Мягкие, размытые цветовые сферы (glow blur blobs) с бесконечной пульсацией для живого фона -->
+        <div class="absolute -top-[10%] left-[5%] w-[50rem] h-[50rem] rounded-full bg-gradient-to-br from-blue-300/30 to-indigo-300/0 dark:from-blue-900/10 dark:to-transparent blur-[120px] animate-pulse" style="animation-duration: 14s;"></div>
+        <div class="absolute top-[15%] right-[-10%] w-[45rem] h-[45rem] rounded-full bg-gradient-to-br from-purple-300/25 to-pink-300/0 dark:from-purple-900/10 dark:to-transparent blur-[120px] animate-pulse" style="animation-duration: 18s;"></div>
+        <div class="absolute bottom-[5%] left-[15%] w-[40rem] h-[40rem] rounded-full bg-gradient-to-br from-sky-300/20 to-emerald-300/0 dark:from-indigo-900/10 dark:to-transparent blur-[110px] animate-pulse" style="animation-duration: 22s;"></div>
+        
+        <!-- Дополнительное теплое янтарное свечение справа по центру для цветового разнообразия -->
+        <div class="absolute top-[35%] right-[10%] w-[35rem] h-[35rem] rounded-full bg-gradient-to-br from-amber-300/15 to-orange-400/0 dark:from-amber-950/5 dark:to-transparent blur-[130px] animate-pulse" style="animation-duration: 25s;"></div>
+        
+        <!-- Дополнительное бирюзовое свечение внизу справа -->
+        <div class="absolute bottom-[-10%] right-[5%] w-[45rem] h-[45rem] rounded-full bg-gradient-to-br from-cyan-200/20 to-teal-400/0 dark:from-cyan-950/8 dark:to-transparent blur-[140px] animate-pulse" style="animation-duration: 20s;"></div>
+    </div>
+
+    <div id="app" v-cloak class="relative z-10">
+        <!-- УВЕДОМЛЕНИЕ (PUSH-TOAST) -->
+        <transition name="toast-fade">
+            <div v-if="notification.show" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[200] w-[calc(100%-2rem)] max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-200 dark:border-slate-700 p-4 flex gap-3.5 items-start transition-all duration-300">
+                <!-- Иконка по типу -->
+                <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg" :class="{
+                    'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400': notification.type === 'warning',
+                    'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400': notification.type === 'error',
+                    'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400': notification.type === 'success',
+                    'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400': notification.type === 'info'
+                }">
+                    <i class="fa-solid" :class="{
+                        'fa-triangle-exclamation': notification.type === 'warning',
+                        'fa-circle-xmark': notification.type === 'error',
+                        'fa-circle-check': notification.type === 'success',
+                        'fa-circle-info': notification.type === 'info'
+                    }"></i>
+                </div>
+                
+                <!-- Текст -->
+                <div class="flex-1 min-w-0">
+                    <h4 class="text-sm font-black text-slate-900 dark:text-white tracking-tight mb-0.5">{{ notification.title }}</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-normal">{{ notification.message }}</p>
+                </div>
+                
+                <!-- Кнопка закрытия -->
+                <button @click="notification.show = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+            </div>
+        </transition>
+
+        <!-- Шапка сайта (Новый контрастный глубокий темно-серый цвет для выразительности) -->
+        <header class="bg-slate-900 text-slate-100 border-b border-slate-800/80 sticky top-0 z-50 transition-all duration-300">
+            <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+                
+                <!-- Логотип с отслеживанием наведения курсора для волны пульсации прямо вокруг иконки сердца -->
+                <div @click="goHome" @mouseenter="isLogoHovered = true" @mouseleave="isLogoHovered = false" class="flex items-center gap-1 sm:gap-2 cursor-pointer logo-heartbeat transition-all">
+                    <div class="relative flex items-center justify-center w-8 h-8">
+                        <!-- Локальные волны пульсации вокруг сердца (только при наведении мыши) -->
+                        <div v-if="isLogoHovered" class="absolute bg-pulse-ripple bg-pulse-ripple-1 pointer-events-none"></div>
+                        <div v-if="isLogoHovered" class="absolute bg-pulse-ripple bg-pulse-ripple-2 pointer-events-none"></div>
+                        <div v-if="isLogoHovered" class="absolute bg-pulse-ripple bg-pulse-ripple-3 pointer-events-none"></div>
+                        
+                        <!-- Сама иконка сердца -->
+                        <i class="fa-solid fa-heart-pulse text-blue-400 text-lg sm:text-2xl transition-transform duration-300 relative z-10"></i>
+                    </div>
+                    <h1 class="text-[11px] xs:text-[13px] sm:text-xl font-black tracking-tight text-white">
+                        <span>MedServicePrice</span><span class="text-blue-400">.kz</span>
+                    </h1>
+                </div>
+                
+                <!-- Навигация, Выбор города и Переключатель тем -->
+                <div class="flex items-center gap-1.5 xs:gap-3 sm:gap-4">
+                    <!-- Гибридный выбор города -->
+                    <div @click="openCityModal" class="relative flex items-center bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 rounded-xl px-2 xs:px-2.5 py-1 sm:py-1.5 text-xs font-bold text-slate-200 shadow-sm cursor-pointer transition-colors duration-200">
+                        <i class="fa-solid fa-location-dot text-blue-400 mr-1 sm:mr-1.5 text-[10px] sm:text-xs animate-pulse"></i>
+                        <span class="font-black text-slate-100 text-[10px] xs:text-[11px] sm:text-xs mr-1 sm:mr-1.5">{{ filters.city || 'Выбрать город...' }}</span>
+                        <i class="fa-solid fa-chevron-down text-[8px] sm:text-[9px] text-slate-400"></i>
+                    </div>
+ 
+                    <nav class="flex text-xs sm:text-sm font-extrabold text-slate-200">
+                        <a href="#" @click.prevent="openAboutModal" class="hover:text-blue-400 transition flex items-center gap-1 py-1.5 px-1.5 sm:px-2 rounded-xl hover:bg-slate-800/80">
+                            <i class="fa-solid fa-circle-info text-blue-400 text-[10px] sm:text-sm"></i>
+                            <span class="text-[10px] xs:text-[11px] sm:text-xs">О сервисе</span>
+                        </a>
+                    </nav>
+                    
+                    <button @click="toggleTheme" class="text-slate-300 hover:text-blue-400 transition-colors w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-750">
+                        <i class="fa-solid text-xs sm:text-sm" :class="isDarkMode ? 'fa-sun text-amber-400' : 'fa-moon'"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-6xl mx-auto px-4 py-8">
+            
+            <!-- Заголовок и Описание (Главная) -->
+            <div :class="hasSearched ? 'mb-8' : 'text-center mt-12 sm:mt-20 mb-12'">
+                <h2 :class="hasSearched ? 'text-2xl mb-2' : 'text-4xl sm:text-5xl mb-6'" class="font-extrabold text-slate-900 dark:text-white transition-all duration-500 tracking-tight">
+                    Поиск лучших цен на медицинские услуги
+                </h2>
+                <p v-if="!hasSearched" class="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                    Сравнивайте актуальные цены в клиниках и лабораториях Казахстана. Экономьте время, деньги и подписывайтесь на уведомления об изменении цен.
+                </p>
+            </div>
+
+           <!-- Блок Поиска (Премиальный стеклянный дизайн с размытием заднего фона и мягким парящим эффектом) -->
+            <div :class="hasSearched ? 'sticky top-16 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md py-3 px-4 sm:py-4 sm:px-8 border-b sm:border border-slate-200/50 dark:border-slate-800/60 sm:rounded-3xl mb-6 shadow-md' : 'mb-12 bg-white/70 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/80 dark:border-slate-800/50 p-6 sm:p-10 rounded-[2rem] shadow-[0_30px_70px_-15px_rgba(59,130,246,0.08)] dark:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.4)] relative overflow-hidden'" class="transition-all duration-300">
+                <!-- Декоративные фоновые градиенты для придания красивой глубины фону (только до поиска) -->
+                <div v-if="!hasSearched" class="absolute -top-40 -left-40 w-96 h-96 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+                <div v-if="!hasSearched" class="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+                <!-- Переключатель категорий услуг (Скрываем при поиске для фикса адаптива на мобильных) -->
+                <div v-show="!hasSearched" class="flex flex-wrap justify-center mb-6 sm:mb-8 gap-2 p-1.5 bg-slate-100/60 dark:bg-slate-950/60 border border-slate-200/50 dark:border-slate-800/40 rounded-3xl sm:rounded-full w-fit mx-auto shadow-inner relative z-10">
+                    <!-- Все категории -->
+                    <button 
+                        @click="filters.category = ''; if (hasSearched) searchServices()"
+                        class="px-4 py-2 sm:px-7 sm:py-3.5 rounded-full font-bold text-xs sm:text-sm tracking-wide transition-all duration-200 cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                        :class="!filters.category ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-[0_4px_12px_rgba(59,130,246,0.12)] border border-slate-100 dark:border-slate-700/50 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
+                    >
+                        <i class="fa-solid fa-layer-group text-sm"></i>
+                        Все разделы
+                    </button>
+                    
+                    <!-- Динамические категории из API -->
+                    <button 
+                        v-for="cat in categoriesList" 
+                        :key="cat.value"
+                        @click="filters.category = cat.value; if (hasSearched) searchServices()"
+                        class="px-4 py-2 sm:px-7 sm:py-3.5 rounded-full font-bold text-xs sm:text-sm tracking-wide transition-all duration-200 cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                        :class="filters.category === cat.value ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-[0_4px_12px_rgba(59,130,246,0.12)] border border-slate-100 dark:border-slate-700/50 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
+                    >
+                        <i class="fa-solid text-sm" :class="cat.value === 'laboratory' ? 'fa-flask-vial' : (cat.value === 'doctor' ? 'fa-user-doctor' : (cat.value === 'diagnostics' ? 'fa-heart-pulse' : 'fa-syringe'))"></i>
+                        {{ cat.label }}
+                    </button>
+                </div>
+                
+                <div :class="!hasSearched ? 'max-w-3xl mx-auto shadow-[0_20px_50px_rgba(59,130,246,0.06)] border-slate-200/50 dark:border-slate-700/50 rounded-3xl' : 'shadow-sm border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl'" class="bg-white/95 dark:bg-slate-800/90 backdrop-blur-md p-2 sm:p-4 border flex flex-col sm:flex-row gap-2 sm:gap-3 transition-all duration-300 relative z-10">
+                    <!-- Поле ввода услуги -->
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 sm:left-5 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
+                        <input 
+                            v-model="searchQuery" 
+                            @keyup.enter="searchServices"
+                            list="service-suggestions"
+                            type="text" 
+                            placeholder="Анализ крови, УЗИ, МРТ..." 
+                            class="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-250/50 dark:border-slate-700/80 dark:text-white rounded-xl sm:rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/80 hover:bg-slate-100/50 dark:hover:bg-slate-900/80 transition-all text-sm font-semibold shadow-inner"
+                        >
+                        <datalist id="service-suggestions">
+                            <option v-for="suggestion in suggestions" :key="suggestion" :value="suggestion"></option>
+                        </datalist>
+                    </div>
+                    
+                    <!-- Кнопка поиска -->
+                    <button 
+                        @click="searchServices" 
+                        :disabled="isLoading"
+                        class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white font-extrabold px-6 sm:px-9 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl transition-all duration-250 text-sm flex items-center justify-center sm:min-w-[145px] cursor-pointer shadow-md shadow-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 button-press-effect"
+                    >
+                        <span v-if="!isLoading" class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-magnifying-glass"></i> <span class="sm:inline">Найти</span>
+                        </span>
+                        <i v-else class="fa-solid fa-circle-notch fa-spin"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Популярные услуги (быстрый выбор) -->
+            <div v-if="!hasSearched" class="mt-8 max-w-4xl mx-auto text-center">
+                <p class="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Быстрый поиск по направлениям</p>
+                <div class="flex flex-wrap justify-center gap-2.5">
+                    <button 
+                        v-for="service in popularServices" 
+                        :key="service.name"
+                        @click="selectPopularService(service.name)"
+                        class="bg-white hover:bg-blue-50/50 dark:bg-slate-800 dark:hover:bg-slate-700/80 border border-slate-200/50 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold px-4 py-2.5 rounded-2xl flex items-center gap-2.5 shadow-[0_2px_10px_rgba(0,0,0,0.01)] cursor-pointer card-hover-effect button-press-effect"
+                    >
+                        <span class="w-6.5 h-6.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">
+                            <i class="fa-solid" :class="service.icon"></i>
+                        </span>
+                        {{ service.name }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Бегущая строка с партнерами/клиниками (только до поиска) -->
+            <div v-if="!hasSearched" class="mt-16 w-full max-w-full overflow-hidden relative">
+                <div class="text-center mb-6">
+                    <p class="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Цены из крупнейших лабораторий и клиник РК</p>
+                </div>
+                
+                <!-- Градиентное размытие по бокам для премиум-эффекта (сделали шире для больших экранов) -->
+                <div class="absolute left-0 top-10 bottom-0 w-16 sm:w-32 bg-gradient-to-r from-slate-100 dark:from-slate-950 to-transparent z-10 pointer-events-none"></div>
+                <div class="absolute right-0 top-10 bottom-0 w-16 sm:w-32 bg-gradient-to-l from-slate-100 dark:from-slate-950 to-transparent z-10 pointer-events-none"></div>
+                
+                <div class="flex overflow-hidden py-4 select-none">
+                    <div class="animate-marquee flex items-center gap-6 pr-6">
+                        <!-- Первый блок элементов (размножен для длины экрана) -->
+                        <div class="flex items-center gap-6 shrink-0" v-for="i in 4" :key="'g1-'+i">
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 w-[220px]">
+                                <div class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-crown"></i></div>
+                                <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">КДЛ ОЛИМП</span><span class="text-[9px] text-slate-400 font-bold uppercase">Лаборатория</span></div>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 w-[220px]">
+                                <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-user-check"></i></div>
+                                <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">DOQ</span><span class="text-[9px] text-slate-400 font-bold uppercase">Поиск врачей</span></div>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 w-[220px]">
+                                <div class="w-8 h-8 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 text-cyan-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-dna"></i></div>
+                                <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">INVITRO</span><span class="text-[9px] text-slate-400 font-bold uppercase">Лаборатория</span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Точная копия первого блока для бесшовной анимации -->
+                        <div class="flex items-center gap-6 shrink-0" v-for="i in 4" :key="'g2-'+i">
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 w-[220px]">
+                                <div class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-crown"></i></div>
+                                <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">КДЛ ОЛИМП</span><span class="text-[9px] text-slate-400 font-bold uppercase">Лаборатория</span></div>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 w-[220px]">
+                                <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-user-check"></i></div>
+                                <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">doq.kz</span><span class="text-[9px] text-slate-400 font-bold uppercase">Поиск врачей</span></div>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 w-[220px]">
+                                <div class="w-8 h-8 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 text-cyan-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-dna"></i></div>
+                                <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">INVITRO</span><span class="text-[9px] text-slate-400 font-bold uppercase">Лаборатория</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Главные преимущества (показываются до поиска) -->
+            <div v-if="!hasSearched" class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto opacity-95 transition-opacity duration-500">
+                <div class="bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-6 rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-200/80 dark:border-slate-800/80 text-center card-hover-effect">
+                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center text-xl mx-auto mb-4">
+                        <i class="fa-solid fa-piggy-bank"></i>
+                    </div>
+                    <h3 class="text-lg font-extrabold text-slate-900 dark:text-white mb-2">Экономия бюджета</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">Сравнивайте актуальную стоимость услуг десятков ведущих медицинских центров в вашем городе.</p>
+                </div>
+                
+                <div class="bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-6 rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-200/80 dark:border-slate-800/80 text-center card-hover-effect">
+                    <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-2xl flex items-center justify-center text-xl mx-auto mb-4">
+                        <i class="fa-regular fa-bell"></i>
+                    </div>
+                    <h3 class="text-lg font-extrabold text-slate-900 dark:text-white mb-2">Подписка на цену</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">Получайте автоматические уведомления на почту или в Telegram при изменении стоимости нужной услуги.</p>
+                </div>
+ 
+                <div class="bg-white/70 dark:bg-slate-900/40 backdrop-blur-md p-6 rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-200/80 dark:border-slate-800/80 text-center card-hover-effect">
+                    <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center text-xl mx-auto mb-4">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                    </div>
+                    <h3 class="text-lg font-extrabold text-slate-900 dark:text-white mb-2">Простые контакты</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">Все контактные данные, адреса филиалов, время работы и карты проезда всегда под рукой.</p>
+                </div>
+            </div>
+
+            <!-- Статистика сервиса (показывается до поиска) -->
+            <div v-if="!hasSearched" class="mt-16 py-8 border-t border-b border-slate-200/40 dark:border-slate-800/40 max-w-5xl mx-auto">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                    <div>
+                        <div class="text-3xl font-black text-blue-600 dark:text-blue-400 mb-1">15+</div>
+                        <div class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Клиник и лабораторий</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-black text-blue-600 dark:text-blue-400 mb-1">5 000+</div>
+                        <div class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Актуальных цен</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-black text-emerald-500 dark:text-emerald-400 mb-1">24/7</div>
+                        <div class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Мониторинг цен</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-black text-purple-500 dark:text-purple-400 mb-1">0 ₸</div>
+                        <div class="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Всегда бесплатно</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Результаты Поиска и Фильтры -->
+            <div v-if="hasSearched || isLoading" class="flex flex-col lg:flex-row gap-8 transition-opacity duration-500">
+                
+                <!-- Сайдбар с фильтрами и активными подписками (скрыт на мобильном) -->
+                <aside class="hidden lg:block lg:w-64 flex-shrink-0 lg:sticky lg:top-[340px] lg:self-start space-y-6 z-20">
+                    <!-- Панель Фильтров -->
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-[0_4px_25px_rgba(0,0,0,0.02)] border border-slate-200 dark:border-slate-700 transition-colors">
+                        <h3 class="font-extrabold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-blue-600"></i> Фильтры
+                        </h3>
+                        
+
+
+                        <div class="mb-5">
+                            <label class="block text-sm font-extrabold text-slate-800 dark:text-slate-300 mb-2">Категория</label>
+                            <select v-model="filters.category" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 dark:text-white rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                <option value="">Все категории</option>
+                                <option v-for="cat in categoriesList" :key="cat.value || cat" :value="cat.value || cat">
+                                    {{ cat.label || cat }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="block text-sm font-extrabold text-slate-800 dark:text-slate-300 mb-2">Цена (₸)</label>
+                            <div class="flex items-center gap-2">
+                                <input v-model.number="filters.minPrice" type="number" placeholder="От" class="w-full px-2.5 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 dark:text-white rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <span class="text-slate-500 text-xs font-bold">-</span>
+                                <input v-model.number="filters.maxPrice" type="number" placeholder="До" class="w-full px-2.5 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 dark:text-white rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input v-model="filters.onlineBooking" type="checkbox" class="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-900 focus:ring-blue-500 cursor-pointer">
+                                <span class="text-sm font-bold text-slate-800 dark:text-slate-300">Онлайн-запись</span>
+                            </label>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Основной список результатов -->
+                <div class="flex-1">
+                    <!-- Загрузка -->
+                    <div v-if="isLoading" class="text-center py-20">
+                        <i class="fa-solid fa-spinner fa-spin text-4xl text-blue-500 mb-4"></i>
+                        <p class="text-slate-500 dark:text-slate-400 font-medium">Собираем лучшие ценовые предложения...</p>
+                    </div>
+
+                    <!-- Результаты -->
+                    <div v-else-if="filteredAndSortedServices.length > 0" class="space-y-6">
+                        
+                        <!-- Блок умной аналитики по услуге (адаптивный грид: в 1 колонку на мобильных, в 3 колонки на планшетах и ПК) -->
+                        <div v-if="serviceStats" class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                            <!-- Медианная цена -->
+                            <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl text-slate-800 dark:text-white border-l-4 border-l-blue-600 border-y border-r border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden transition-all duration-300 hover:shadow-md">
+                                <div class="absolute -right-4 -bottom-4 opacity-10 text-7xl text-blue-500/30 dark:text-blue-400/20"><i class="fa-solid fa-calculator"></i></div>
+                                <p class="text-xs font-black uppercase tracking-wider text-blue-700 dark:text-blue-400">Медианная цена</p>
+                                <h4 class="text-xl sm:text-2xl font-black mt-1.5 sm:mt-2 text-slate-900 dark:text-white tracking-tight">{{ formatPrice(serviceStats.medianPrice) }} ₸</h4>
+                                <p class="text-xs sm:text-[11px] mt-1 text-slate-500 dark:text-slate-400 font-bold">По {{ filteredAndSortedServices.length }} предложениям в городе</p>
+                            </div>
+                            
+                            <!-- Лучшая сделка -->
+                            <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl border-l-4 border-l-emerald-500 border-y border-r border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden transition-all duration-300 hover:shadow-md">
+                                <div class="absolute -right-4 -bottom-4 opacity-10 text-7xl text-emerald-500/30 dark:text-emerald-400/20"><i class="fa-solid fa-award"></i></div>
+                                <p class="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Лучшая цена</p>
+                                <h4 class="text-xl sm:text-2xl font-black text-emerald-800 dark:text-emerald-300 mt-1.5 sm:mt-2 tracking-tight">{{ formatPrice(serviceStats.cheapestPrice) }} ₸</h4>
+                                <p class="text-xs sm:text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-bold">В клинике: <span class="font-extrabold text-emerald-950 dark:text-emerald-400">{{ serviceStats.cheapestClinic }}</span></p>
+                            </div>
+
+                            <!-- Потенциальная выгода -->
+                            <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl border-l-4 border-l-violet-500 border-y border-r border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden transition-all duration-300 hover:shadow-md">
+                                <div class="absolute -right-4 -bottom-4 opacity-10 text-7xl text-violet-500/30 dark:text-violet-400/20"><i class="fa-solid fa-piggy-bank"></i></div>
+                                <p class="text-xs font-black uppercase tracking-wider text-violet-700 dark:text-violet-400">Выгода до</p>
+                                <h4 class="text-xl sm:text-2xl font-black text-violet-800 dark:text-violet-300 mt-1.5 sm:mt-2 tracking-tight">{{ formatPrice(serviceStats.potentialSavings) }} ₸</h4>
+                                <p class="text-xs sm:text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-bold">При выборе лучшего предложения</p>
+                            </div>
+                        </div>
+
+                        <!-- Панель управления результатами (Вид, Гео, Сортировка) -->
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-200 dark:border-slate-700 transition-colors">
+                            <!-- Количество и переключатель режима просмотра -->
+                            <div class="flex items-center gap-2 sm:gap-4 w-full md:w-auto justify-between md:justify-start">
+                                <span class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">Найдено: {{ filteredAndSortedServices.length }}</span>
+                                
+                                <div class="flex items-center gap-2">
+                                    <!-- Мобильная кнопка открытия фильтров -->
+                                    <button @click="openMobileFilters" class="lg:hidden bg-blue-50/80 hover:bg-blue-100 dark:bg-slate-700 dark:hover:bg-slate-650 border border-blue-150/80 dark:border-slate-600 text-blue-700 dark:text-blue-400 font-extrabold text-xs px-2.5 py-1.5 rounded-xl flex items-center gap-1 cursor-pointer relative">
+                                        <i class="fa-solid fa-sliders"></i>
+                                        <span>Фильтры</span>
+                                        <span v-if="activeFiltersCount() > 0" class="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-black border border-white dark:border-slate-800">
+                                            {{ activeFiltersCount() }}
+                                        </span>
+                                    </button>
+
+                                    <div class="bg-slate-100 dark:bg-slate-900 p-1 rounded-xl flex items-center border border-slate-200 dark:border-slate-800 shadow-inner">
+                                        <button @click="toggleViewMode('list')" :class="viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'" class="px-2 sm:px-3.5 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1 cursor-pointer">
+                                            <i class="fa-solid fa-list-ul"></i> <span class="hidden xs:inline">Список</span>
+                                        </button>
+                                        <button @click="toggleViewMode('map')" :class="viewMode === 'map' ? 'bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'" class="px-2 sm:px-3.5 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1 cursor-pointer">
+                                            <i class="fa-solid fa-map-location-dot"></i> <span class="hidden xs:inline">На карте</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Сортировка -->
+                            <div class="flex flex-wrap items-center gap-4 w-full md:w-auto justify-end">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-slate-700 dark:text-slate-400">Сортировка:</span>
+                                    <select v-model="sortBy" class="text-xs bg-white dark:bg-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold cursor-pointer">
+                                        <option value="price_asc">Сначала дешевые</option>
+                                        <option value="price_desc">Сначала дорогие</option>
+                                        <option value="rating">По рейтингу клиники</option>
+                                        <option value="date">По дате обновления</option>
+
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- РЕЖИМ СПИСКА -->
+                        <div v-show="viewMode === 'list'" class="space-y-4">
+                            <!-- Информационная панель об актуальности данных парсинга -->
+                            <div v-if="filteredAndSortedServices.length > 0 && getLatestParsingDate()" class="bg-blue-50/40 dark:bg-slate-800/40 border border-blue-100/50 dark:border-slate-700/60 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3 text-xs sm:text-sm text-blue-800 dark:text-blue-300 animate-fade-in-up">
+                                <div class="w-8 h-8 bg-blue-100/60 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                                    <i class="fa-solid fa-database text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="font-extrabold text-slate-900 dark:text-white block sm:inline">Обновление цен завершено:</span>
+                                    <span class="text-slate-600 dark:text-slate-400 sm:ml-1 font-semibold">актуальные предложения обновлены на дату</span>
+                                    <span class="font-black text-blue-700 dark:text-blue-400 ml-1 bg-blue-100/50 dark:bg-slate-700/50 px-2.5 py-1 rounded-lg text-xs">{{ getLatestParsingDate() }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Карточки услуг -->
+                            <div v-for="item in filteredAndSortedServices" :key="item.id" class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-stretch gap-4 sm:gap-6 card-hover-effect animate-fade-in-up">
+                                
+                                <!-- Информация -->
+                                <div class="flex-1 w-full flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3">
+                                            <span @click.prevent="openModal(item)" class="font-black text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors">{{ item.clinic }}</span>
+                                            <span class="flex items-center gap-1 text-[10px] sm:text-xs font-black text-amber-800 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-900/30 border border-amber-200/40 dark:border-amber-800/30 px-2 py-0.5 rounded-lg">
+                                                <i class="fa-solid fa-star text-[9px] sm:text-[10px] text-amber-500"></i> {{ item.rating }}
+                                            </span>
+                                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-[10px] sm:text-xs px-2 py-0.5 rounded-lg font-extrabold border border-slate-200 dark:border-slate-600/40">{{ item.category }}</span>
+                                            <span v-if="item.isRecommended" class="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-extrabold border border-emerald-200/40 dark:border-emerald-900/40">Выгодно</span>
+                                            <!-- Дистанция по геопозиции -->
+                                            <span v-if="userLatitude && userLongitude && getDistance(userLatitude, userLongitude, item.lat, item.lng) !== null" class="bg-indigo-50/80 dark:bg-indigo-950/30 text-indigo-800 dark:text-indigo-300 text-[10px] sm:text-xs px-2 py-0.5 rounded-lg font-extrabold border border-indigo-200/50 dark:border-indigo-900/40 flex items-center gap-1">
+                                                <i class="fa-solid fa-route text-[9px] sm:text-[10px] text-indigo-500"></i> ~{{ getDistance(userLatitude, userLongitude, item.lat, item.lng) }} км
+                                            </span>
+                                        </div>
+                                        
+                                        <h4 @click.prevent="openModal(item)" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-extrabold text-sm sm:text-base mb-3 sm:mb-4 tracking-tight cursor-pointer inline-block">{{ item.service_name }}</h4>
+                                        
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">
+                                            <p class="flex items-center"><i class="fa-solid fa-location-dot w-4 text-center mr-2 text-blue-500 dark:text-blue-400"></i> г. {{ item.city }}, {{ item.address }}</p>
+                                            <p class="flex items-center"><i class="fa-regular fa-clock w-4 text-center mr-2 text-indigo-500 dark:text-indigo-400"></i> {{ item.working_hours }}</p>
+                                            <p class="flex items-center"><i class="fa-solid fa-phone w-4 text-center mr-2 text-teal-500 dark:text-teal-400"></i> {{ item.phone }}</p>
+                                            <div v-if="item.has_online_booking" class="flex items-center">
+                                                <span class="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border border-emerald-200/30 dark:border-emerald-900/30 rounded-lg px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-bold inline-flex items-center gap-1">
+                                                    <i class="fa-solid fa-calendar-check text-emerald-500"></i> Доступна онлайн-запись
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Кнопка открытия контактов и сравнения -->
+                                    <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-4">
+                                        <button @click.prevent="openModal(item)" class="text-[11px] sm:text-xs text-blue-700 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-black flex items-center gap-1.5 transition-colors cursor-pointer group">
+                                            Контакты и подписка на цену
+                                            <i class="fa-solid fa-chevron-right text-[8px] sm:text-[9px] group-hover:translate-x-0.5 transition-transform"></i>
+                                        </button>
+                                        
+                                        <!-- Чекбокс сравнения -->
+                                        <label class="flex items-center gap-2 cursor-pointer select-none text-[11px] sm:text-xs text-slate-700 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-400 font-bold transition-colors">
+                                            <input type="checkbox" :checked="isInComparison(item)" @change="toggleComparison(item)" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded text-blue-600 border-slate-300 dark:border-slate-700 focus:ring-blue-500 bg-white dark:bg-slate-900 cursor-pointer">
+                                            <span class="flex items-center gap-1">
+                                                <i class="fa-solid fa-scale-balanced text-[9px] sm:text-[10px]"></i> Сравнить предложение
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Правый блок: Цена и кнопка перехода (в стиле Aviasales авиабилетов) -->
+                                <div class="flex flex-col items-stretch sm:items-end w-full sm:w-auto sm:min-w-[190px] border-t sm:border-t-0 sm:border-l pt-4 sm:pt-0 sm:pl-6 border-slate-200 dark:border-slate-700 justify-between self-stretch">
+                                    <div class="text-left sm:text-right mb-5">
+                                        <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">{{ formatPrice(item.price) }} ₸</div>
+                                        <!-- Дата обновления убрана из карточек по запросу пользователя -->
+                                    </div>
+                                    
+                                    <div class="flex flex-col gap-2 w-full">
+                                        <a :href="item.website_url" target="_blank" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-200 text-xs sm:text-sm text-center flex justify-center items-center gap-1.5 shadow-md shadow-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 hover:-translate-y-0.5">
+                                            На сайт <i class="fa-solid fa-arrow-up-right-from-square text-[10px] sm:text-xs"></i>
+                                        </a>
+                                        <a :href="'https://2gis.kz/search/' + encodeURIComponent(item.city + ' ' + item.clinic + ' ' + item.address)" target="_blank" class="w-full bg-[#edf2f7] hover:bg-[#e2e8f0] dark:bg-slate-700 dark:hover:bg-slate-650 text-slate-800 dark:text-slate-200 font-extrabold px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl transition-all text-[10px] sm:text-xs text-center flex justify-center items-center gap-1.5 border border-[#cbd5e1] dark:border-slate-600">
+                                            <i class="fa-solid fa-route text-blue-600 dark:text-blue-400"></i> Маршрут в 2GIS
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- РЕЖИМ КАРТЫ -->
+                        <div v-show="viewMode === 'map'" class="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden relative transition-colors">
+                            <div id="map-container" class="w-full h-[550px] rounded-2xl border border-slate-100 dark:border-slate-700 shadow-inner z-10"></div>
+                            <div class="mt-3 flex justify-between items-center text-xs text-slate-500 dark:text-slate-400">
+                                <span class="flex items-center gap-1 font-semibold"><i class="fa-solid fa-circle-info text-blue-500"></i> Кликните на маркер, чтобы посмотреть контакты и записаться</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">Регион: {{ filters.city }}</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Пустой результат -->
+                    <div v-else class="text-center py-20 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 border-dashed transition-colors">
+                        <i class="fa-solid fa-stethoscope text-5xl text-slate-300 dark:text-slate-600 mb-4"></i>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Ничего не найдено</h3>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">Попробуйте изменить поисковый запрос, категорию или выбрать другой город.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- МОДАЛЬНОЕ ОКНО: Контакты клиники и подписка на уведомления -->
+            <div v-if="isModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="closeModal"></div>
+                
+                <div class="relative bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transform transition-all modal-animate-in border border-slate-200 dark:border-slate-800">
+                    
+                    <!-- Шапка модалки -->
+                    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/60">
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-hospital text-blue-600 dark:text-blue-400"></i>
+                                {{ selectedClinicName }}
+                            </h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Информация о филиале и подписка на уведомления</p>
+                        </div>
+                        <button @click="closeModal" class="text-slate-400 hover:text-rose-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Содержимое модалки -->
+                    <div class="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-8" v-if="selectedServiceItem">
+                        
+                        <!-- Левая колонка: Контакты клиники -->
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Контакты и адрес</h4>
+                                <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-4">
+                                    
+                                    <!-- Город и адрес -->
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-8 h-8 bg-blue-100/60 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            <i class="fa-solid fa-location-dot"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-slate-400 dark:text-slate-500">Адрес филиала</p>
+                                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">г. {{ selectedServiceItem.city }}, {{ selectedServiceItem.address }}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Телефон -->
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-8 h-8 bg-green-100/60 dark:bg-green-950/40 text-green-600 dark:text-green-400 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            <i class="fa-solid fa-phone"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-slate-400 dark:text-slate-500">Номер телефона</p>
+                                            <a :href="'tel:' + selectedServiceItem.phone" class="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+                                                {{ selectedServiceItem.phone }}
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <!-- Режим работы -->
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-8 h-8 bg-amber-100/60 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            <i class="fa-regular fa-clock"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-slate-400 dark:text-slate-500">Режим работы</p>
+                                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ selectedServiceItem.working_hours }}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Рейтинг клиники -->
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-8 h-8 bg-purple-100/60 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            <i class="fa-solid fa-star"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-slate-400 dark:text-slate-500">Рейтинг клиники</p>
+                                            <div class="flex items-center gap-1.5 mt-0.5">
+                                                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ selectedServiceItem.rating }} из 5.0</span>
+                                                <span class="text-amber-400 text-xs flex gap-0.5">
+                                                    <i class="fa-solid fa-star text-[10px]" v-for="i in Math.floor(selectedServiceItem.rating)"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- История цен (Sparkline) -->
+                                    <div v-if="selectedServiceItem.price_history" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60">
+                                        <p class="text-xs text-slate-400 dark:text-slate-500 mb-2 font-semibold flex items-center gap-1">
+                                            <i class="fa-solid fa-chart-line text-blue-500"></i> История цен (за последние 30 дней)
+                                        </p>
+                                        <div class="flex items-end justify-between h-14 px-3 pt-2 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100/80 dark:border-slate-700">
+                                            <div v-for="(p, index) in selectedServiceItem.price_history" :key="index" class="flex flex-col items-center flex-1 group relative">
+                                                <!-- Всплывающая цена при наведении -->
+                                                <span class="absolute bottom-full mb-1 bg-slate-900 text-white text-[10px] py-1 px-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-10">
+                                                    {{ formatPrice(p) }} ₸
+                                                </span>
+                                                <!-- Столбик -->
+                                                <div class="w-6 bg-blue-500/80 dark:bg-blue-400/80 hover:bg-blue-600 dark:hover:bg-blue-500 rounded-t transition-all" :style="{ height: (p / Math.max(...selectedServiceItem.price_history) * 32) + 'px' }"></div>
+                                                <span class="text-[8px] text-slate-400 dark:text-slate-500 mt-1 font-mono">{{ ['01.06', '10.06', '18.06', '26.06'][index] || '' }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex justify-between items-center text-[10px] text-slate-400 dark:text-slate-500 mt-1 px-1">
+                                            <span>Мин: {{ formatPrice(Math.min(...selectedServiceItem.price_history)) }} ₸</span>
+                                            <span>Макс: {{ formatPrice(Math.max(...selectedServiceItem.price_history)) }} ₸</span>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <!-- Кнопки перехода -->
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <a :href="selectedServiceItem.website_url" target="_blank" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl transition-all text-sm text-center flex justify-center items-center gap-2 shadow-sm">
+                                    Перейти на сайт <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                                </a>
+                                <a :href="'https://2gis.kz/search/' + encodeURIComponent(selectedServiceItem.city + ' ' + selectedServiceItem.clinic + ' ' + selectedServiceItem.address)" target="_blank" class="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 font-semibold px-4 py-3 rounded-xl transition-all text-sm text-center flex justify-center items-center gap-2">
+                                    <i class="fa-solid fa-route text-slate-500 dark:text-slate-400"></i> Построить маршрут
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Правая колонка: Оформление подписки на изменение цены -->
+                        <div class="border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-700/60 pt-6 md:pt-0 md:pl-8 flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Подписка на изменение цен</h4>
+                                
+                                <div v-if="!subscriptionSuccess" class="space-y-4">
+                                    <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                                        Подпишитесь, чтобы оперативно узнать о скидках, акциях или изменении цены на услугу 
+                                        <span class="font-semibold text-blue-600 dark:text-blue-400">«{{ selectedServiceItem.service_name }}»</span> в этой клинике.
+                                    </p>
+
+                                    <!-- Карточка текущей цены -->
+                                    <div class="bg-blue-50/50 dark:bg-blue-950/20 p-4 rounded-xl border border-blue-100/30 dark:border-blue-900/30 flex justify-between items-center">
+                                        <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Текущая цена услуги:</span>
+                                        <span class="text-xl font-black text-blue-600 dark:text-blue-400">{{ formatPrice(selectedServiceItem.price) }} ₸</span>
+                                    </div>
+
+                                    <!-- Канал уведомлений -->
+                                    <div class="space-y-2">
+                                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400">Канал связи</label>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <button 
+                                                @click="subscriptionForm.type = 'email'" 
+                                                type="button"
+                                                :class="subscriptionForm.type === 'email' ? 'border-2 border-blue-500 bg-blue-50/30 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400' : 'border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'"
+                                                class="py-2 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
+                                            >
+                                                <i class="fa-regular fa-envelope"></i> E-mail
+                                            </button>
+                                            <button 
+                                                @click="subscriptionForm.type = 'telegram'" 
+                                                type="button"
+                                                :class="subscriptionForm.type === 'telegram' ? 'border-2 border-blue-500 bg-blue-50/30 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400' : 'border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'"
+                                                class="py-2 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
+                                            >
+                                                <i class="fa-brands fa-telegram"></i> Telegram
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Поле ввода контакта -->
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                            {{ subscriptionForm.type === 'email' ? 'Электронная почта' : 'Никнейм в Telegram' }}
+                                        </label>
+                                        <div class="relative">
+                                            <i :class="subscriptionForm.type === 'email' ? 'fa-regular fa-envelope' : 'fa-brands fa-telegram'" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
+                                            <input 
+                                                v-model="subscriptionForm.value" 
+                                                :type="subscriptionForm.type === 'email' ? 'email' : 'text'"
+                                                :placeholder="subscriptionForm.type === 'email' ? 'example@mail.ru' : '@your_username'"
+                                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <!-- Условия отслеживания -->
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400">Когда уведомлять</label>
+                                        <select v-model="subscriptionForm.condition" class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-medium">
+                                            <option value="drop">Только при снижении цены (Скидки)</option>
+                                            <option value="any">При любом изменении цены</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Чекбокс согласия -->
+                                    <label class="flex items-start gap-2 cursor-pointer select-none">
+                                        <input v-model="subscriptionForm.agreed" type="checkbox" class="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-900 mt-0.5 focus:ring-blue-500">
+                                        <span class="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
+                                            Я соглашаюсь на обработку моих персональных данных и получение оповещений об изменениях цен.
+                                        </span>
+                                    </label>
+                                    
+                                    <!-- Кнопка отправить -->
+                                    <button 
+                                        @click="handleSubscribe"
+                                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/10 cursor-pointer"
+                                    >
+                                        <i class="fa-regular fa-bell"></i> Включить уведомления
+                                    </button>
+                                </div>
+
+                                <!-- Успешный результат -->
+                                <div v-else class="space-y-5 py-4 text-center">
+                                    <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-2 shadow-inner">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                    </div>
+                                    <h5 class="text-lg font-bold text-slate-900 dark:text-white">Подписка успешно оформлена!</h5>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-sm mx-auto">
+                                        Мы добавили подписку на услугу «{{ selectedServiceItem.service_name }}» в клинике «{{ selectedClinicName }}». 
+                                        Оповещение поступит на <span class="font-bold text-slate-800 dark:text-white">{{ subscriptionForm.value }}</span> при выполнении выбранных условий.
+                                    </p>
+                                    <button 
+                                        @click="subscriptionSuccess = false" 
+                                        class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+                                    >
+                                        Оформить ещё одну подписку
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    
+                </div>
+            </div>
+
+            <!-- МОДАЛЬНОЕ ОКНО: О сервисе -->
+            <div v-if="isAboutModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="closeAboutModal"></div>
+                <div class="relative bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl flex flex-col transform transition-all modal-animate-in border border-slate-200 dark:border-slate-800">
+                    <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/60 rounded-t-3xl">
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-circle-info text-blue-500"></i> О сервисе
+                        </h3>
+                        <button @click="closeAboutModal" class="text-slate-400 hover:text-rose-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 text-slate-800 dark:text-slate-200 text-sm leading-relaxed">
+                        <p class="mb-4 text-base text-slate-950 dark:text-white">
+                            <strong>MedServicePrice.kz</strong> – это независимый бесплатный информационный портал, созданный для повышения прозрачности и доступности цен на частную медицину в Казахстане.
+                        </p>
+                        
+                        <p class="mb-4 text-slate-800 dark:text-slate-200">
+                            Больше не нужно обзванивать десятки клиник или искать спрятанные прайс-листы на сайтах лабораторий в поисках лучшего предложения на анализы, УЗИ, МРТ или КТ. Наш сервис решает эту задачу в два клика.
+                        </p>
+                        
+                        <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/60 mb-5">
+                            <h4 class="font-black text-slate-950 dark:text-white mb-3 text-xs uppercase tracking-wider">Наши возможности</h4>
+                            <ul class="space-y-3 text-sm text-slate-800 dark:text-slate-200">
+                                <li class="flex items-start gap-2.5">
+                                    <i class="fa-solid fa-magnifying-glass-chart text-blue-500 mt-0.5"></i>
+                                    <span><strong class="text-slate-950 dark:text-white">Сравнение цен:</strong> Быстрая сортировка услуг от самых дешевых до дорогих.</span>
+                                </li>
+                                <li class="flex items-start gap-2.5">
+                                    <i class="fa-regular fa-bell text-emerald-500 mt-0.5"></i>
+                                    <span><strong class="text-slate-950 dark:text-white">Умная подписка:</strong> Оповещения на E-mail или Telegram при снижении цены.</span>
+                                </li>
+                                <li class="flex items-start gap-2.5">
+                                    <i class="fa-solid fa-route text-indigo-500 mt-0.5"></i>
+                                    <span><strong class="text-slate-950 dark:text-white">Маршруты:</strong> Быстрый переход в 2GIS для планирования поездки в клинику.</span>
+                                </li>
+                             </ul>
+                        </div>
+                        
+                        <div class="p-4 bg-blue-50/70 dark:bg-blue-950/20 rounded-2xl border border-blue-100 dark:border-blue-900/40 text-center">
+                            <p class="text-blue-950 dark:text-blue-300 font-extrabold">Сравнивайте цены, экономьте время и берегите здоровье!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ЕЛЕГАНТНЫЙ ТОСТ ПОДТВЕРЖДЕНИЯ ГЕОЛОКАЦИИ -->
+            <div v-if="geoToast.show" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[105] w-full max-w-sm px-4">
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl p-4.5 flex flex-col gap-3 transition-all duration-300">
+                    <div class="flex gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-500 flex items-center justify-center text-lg shrink-0">
+                            <i class="fa-solid fa-location-crosshairs animate-pulse"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-tight">Ваш город определен</h4>
+                            <p class="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5">Ваш город – <span class="text-blue-600 dark:text-blue-400 font-extrabold">{{ geoToast.city }}</span>?</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                        <button @click="confirmGeoCity" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-2 px-3 rounded-xl transition-all shadow-sm shadow-blue-500/15 cursor-pointer">
+                            Да, верно
+                        </button>
+                        <button @click="changeGeoCity" class="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-extrabold text-xs py-2 px-3 rounded-xl transition-all cursor-pointer">
+                            Сменить город
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- МОДАЛЬНОЕ ОКНО: Подтверждение города -->
+            <div v-if="isCityConfirmModalOpen" class="fixed inset-0 z-[120] flex items-center justify-center p-4 animate-fade-in">
+                <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-md"></div>
+                <div class="relative bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-6 sm:p-8 modal-animate-in text-center">
+                    <!-- Иконка или Иллюстрация -->
+                    <div class="w-16 h-16 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-100/50 dark:border-blue-900/30">
+                        <i class="fa-solid fa-location-dot text-2xl animate-pulse"></i>
+                    </div>
+                    
+                    <h3 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Это ваш город?</h3>
+                    <div class="text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight mb-4">{{ detectedCity }}</div>
+                    
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold mb-8 leading-relaxed">
+                        Мы автоматически определили ваше местоположение, чтобы показывать предложения в вашем регионе.
+                    </p>
+                    
+                    <div class="flex flex-col gap-2.5">
+                        <button 
+                            @click="confirmGuessedCity(true)" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm py-3.5 px-6 rounded-2xl transition duration-150 cursor-pointer shadow-md shadow-blue-500/10 active:scale-98"
+                        >
+                            Да, всё верно
+                        </button>
+                        <button 
+                            @click="confirmGuessedCity(false)" 
+                            class="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-xs sm:text-sm py-3.5 px-6 rounded-2xl transition duration-150 cursor-pointer border border-slate-250 dark:border-slate-700"
+                        >
+                            Нет, выбрать другой город
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- МОДАЛЬНОЕ ОКНО: Выбор города -->
+            <div v-if="isCityModalOpen" class="fixed inset-0 z-[115] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" @click="isCityModalOpen = false"></div>
+                <div class="relative bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[85vh] flex flex-col modal-animate-in">
+                    
+                    <!-- Шапка модального окна -->
+                    <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
+                        <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-earth-asia text-blue-500"></i> Выбор города
+                        </h3>
+                        <button @click="isCityModalOpen = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 cursor-pointer">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Поиск по городам -->
+                    <div class="px-6 py-4 border-b border-slate-50 dark:border-slate-800/50 shrink-0">
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input 
+                                v-model="citySearchQuery"
+                                type="text"
+                                placeholder="Поиск города по названию..."
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                        </div>
+                    </div>
+                    
+                    <!-- Список/Сетка городов -->
+                    <div class="p-6 overflow-y-auto flex-1">
+                        <!-- Популярные города (быстрый выбор) -->
+                        <div v-if="!citySearchQuery" class="mb-6">
+                            <h4 class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-3">Популярные города</h4>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <button 
+                                    v-for="popCity in ['Алматы', 'Астана', 'Караганда', 'Шымкент']" 
+                                    :key="popCity"
+                                    @click="selectCityFromModal(popCity)"
+                                    class="px-4 py-2.5 rounded-xl border font-bold text-xs text-left flex items-center justify-between transition-all cursor-pointer"
+                                    :class="filters.city === popCity ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 shadow-sm' : 'border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-slate-700/50'"
+                                >
+                                    <span>{{ popCity }}</span>
+                                    <i v-if="filters.city === popCity" class="fa-solid fa-circle-check text-blue-500"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <h4 class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-3">Все города Казахстана</h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <button 
+                                v-for="city in filteredModalCities" 
+                                :key="city"
+                                @click="selectCityFromModal(city)"
+                                class="px-4 py-2.5 rounded-xl border font-bold text-xs text-left flex items-center justify-between transition-all cursor-pointer"
+                                :class="filters.city === city ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 shadow-sm' : 'border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-slate-700/50'"
+                            >
+                                <span>{{ city }}</span>
+                                <i v-if="filters.city === city" class="fa-solid fa-circle-check text-blue-500"></i>
+                            </button>
+                        </div>
+                        
+                        <div v-if="filteredModalCities.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-500 font-bold text-xs">
+                            <i class="fa-solid fa-earth-europe text-xl mb-2 block"></i> Город не найден
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- МОДАЛЬНОЕ ОКНО: Фильтры для мобильного -->
+            <div v-show="isMobileFiltersOpen" class="fixed inset-0 z-[110] flex items-end sm:items-center justify-center">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="closeMobileFilters"></div>
+                <div class="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden transform transition-all modal-animate-in border-t sm:border border-slate-200 dark:border-slate-800">
+                    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/60 rounded-t-3xl">
+                        <h3 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-blue-500"></i> Фильтры
+                        </h3>
+                        <div class="flex items-center gap-3">
+                            <button v-if="activeFiltersCount() > 0" @click="resetFilters" class="text-xs text-rose-500 hover:text-rose-600 font-extrabold cursor-pointer transition-colors bg-rose-50 dark:bg-rose-950/20 px-2.5 py-1.5 rounded-lg border border-rose-100 dark:border-rose-900/30">
+                                Сбросить
+                            </button>
+                            <button @click="closeMobileFilters" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 space-y-6 overflow-y-auto">
+
+
+                        <!-- Категория -->
+                        <div>
+                            <label class="block text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Категория медицинских услуг</label>
+                            <select v-model="filters.category" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                <option value="">Все категории</option>
+                                <option v-for="cat in categoriesList" :key="cat.value || cat" :value="cat.value || cat">
+                                    {{ cat.label || cat }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Диапазон цен -->
+                        <div>
+                            <label class="block text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2.5">Диапазон цен (₸)</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="relative">
+                                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-xs font-bold text-slate-400">От</span>
+                                    <input v-model.number="filters.minPrice" type="number" placeholder="0" class="w-full pl-10 pr-3 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="relative">
+                                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-xs font-bold text-slate-400">До</span>
+                                    <input v-model.number="filters.maxPrice" type="number" placeholder="max" class="w-full pl-10 pr-3 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Дополнительно -->
+                        <div>
+                            <label class="block text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">Опции клиники</label>
+                            <label class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60 rounded-xl cursor-pointer select-none">
+                                <div class="flex items-center gap-2.5">
+                                    <i class="fa-solid fa-calendar-check text-emerald-500 text-sm"></i>
+                                    <span class="text-sm font-bold text-slate-800 dark:text-slate-200">Онлайн-запись</span>
+                                </div>
+                                <input v-model="filters.onlineBooking" type="checkbox" class="w-5 h-5 text-blue-600 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-900 focus:ring-blue-500 cursor-pointer">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Подвал с кнопкой применения -->
+                    <div class="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex flex-col gap-2">
+                        <button @click="closeMobileFilters" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3.5 rounded-xl transition-all duration-200 text-sm text-center flex justify-center items-center gap-2 shadow-md">
+                            Показать предложений ({{ filteredAndSortedServices.length }})
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ПАНЕЛЬ СРАВНЕНИЯ: Плавающая внизу -->
+            <div v-if="comparisonList.length > 0" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-white dark:bg-slate-800 shadow-2xl rounded-3xl border border-slate-200 dark:border-slate-700/80 p-4 max-w-md w-[92%] flex items-center justify-between gap-4 transition-all duration-300">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-black text-slate-950 dark:text-white uppercase tracking-wider">Сравнение цен</h4>
+                        <p class="text-[11px] text-slate-600 dark:text-slate-400 font-bold">Добавлено предложений: {{ comparisonList.length }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button @click="clearComparison" class="text-xs text-slate-400 hover:text-rose-500 font-bold px-2 py-1 transition-colors">Сбросить</button>
+                    <button @click="openCompareModal" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold px-4 py-2 rounded-xl transition shadow-sm cursor-pointer shadow-md shadow-blue-500/10">
+                        Сравнить
+                    </button>
+                </div>
+            </div>
+
+            <!-- МОДАЛЬНОЕ ОКНО: Таблица сравнения клиник -->
+            <div v-if="isCompareModalOpen" class="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="closeCompareModal"></div>
+                <div class="relative bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden border border-slate-200 dark:border-slate-800 modal-animate-in">
+                    
+                    <!-- Шапка -->
+                    <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 dark:border-slate-800/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/60">
+                        <div>
+                            <h3 class="text-base sm:text-xl font-black text-slate-900 dark:text-white flex items-center gap-1.5 sm:gap-2">
+                                <i class="fa-solid fa-scale-balanced text-blue-600 dark:text-blue-400"></i>
+                                Сравнение предложений
+                            </h3>
+                            <p class="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-0.5 sm:mt-1">Детальное сравнение выбранных медицинских предложений</p>
+                        </div>
+                        <button @click="closeCompareModal" class="text-slate-400 hover:text-rose-500 transition-colors w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
+                            <i class="fa-solid fa-xmark text-base sm:text-lg"></i>
+                        </button>
+                    </div>
+
+                    <!-- Таблица -->
+                    <div class="p-3 sm:p-6 overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[500px]">
+                            <thead>
+                                <tr class="border-b border-slate-100 dark:border-slate-700/80">
+                                    <th class="py-2.5 sm:py-3 px-2 sm:px-4 text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 w-1/4">Параметр</th>
+                                    <th v-for="item in comparisonList" :key="item.id" class="py-2.5 sm:py-3 px-2 sm:px-4 text-center">
+                                        <div class="font-black text-slate-900 dark:text-white text-xs sm:text-base leading-tight">{{ item.clinic }}</div>
+                                        <div class="text-[9px] sm:text-[11px] text-blue-600 dark:text-blue-400 font-extrabold mt-0.5 leading-tight">{{ item.service_name }}</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 text-xs sm:text-sm">
+                                <!-- Цена -->
+                                <tr>
+                                    <td class="py-3 px-2 sm:px-4 font-extrabold text-slate-500 dark:text-slate-400">Цена услуги</td>
+                                    <td v-for="item in comparisonList" :key="item.id" class="py-3 px-2 sm:px-4 text-center">
+                                        <span class="text-sm sm:text-xl font-black text-slate-900 dark:text-white">{{ formatPrice(item.price) }} ₸</span>
+                                        <span v-if="item.isRecommended" class="block text-[8px] sm:text-[10px] text-green-600 dark:text-green-400 font-black uppercase mt-0.5 sm:mt-1">🔥 Выгодно</span>
+                                    </td>
+                                </tr>
+                                <!-- Рейтинг -->
+                                <tr>
+                                    <td class="py-3 px-2 sm:px-4 font-extrabold text-slate-500 dark:text-slate-400">Рейтинг</td>
+                                    <td v-for="item in comparisonList" :key="item.id" class="py-3 px-2 sm:px-4 text-center">
+                                        <div class="flex items-center justify-center gap-1 font-black text-amber-500 text-xs sm:text-sm">
+                                            <i class="fa-solid fa-star text-[10px] sm:text-xs"></i>
+                                            <span>{{ item.rating }} / 5.0</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- Геопозиция (Расстояние) -->
+                                <tr v-if="userLatitude && userLongitude">
+                                    <td class="py-3 px-2 sm:px-4 font-extrabold text-slate-500 dark:text-slate-400">Расстояние</td>
+                                    <td v-for="item in comparisonList" :key="item.id" class="py-3 px-2 sm:px-4 text-center">
+                                        <span class="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg font-black">
+                                            ~{{ getDistance(userLatitude, userLongitude, item.lat, item.lng) }} км
+                                        </span>
+                                    </td>
+                                </tr>
+                                <!-- Время работы -->
+                                <tr>
+                                    <td class="py-3 px-2 sm:px-4 font-extrabold text-slate-500 dark:text-slate-400">Режим работы</td>
+                                    <td v-for="item in comparisonList" :key="item.id" class="py-3 px-2 sm:px-4 text-center text-slate-700 dark:text-slate-300 font-semibold text-[11px] sm:text-sm">
+                                        {{ item.working_hours }}
+                                    </td>
+                                </tr>
+                                <!-- Адрес -->
+                                <tr>
+                                    <td class="py-3 px-2 sm:px-4 font-extrabold text-slate-500 dark:text-slate-400">Адрес</td>
+                                    <td v-for="item in comparisonList" :key="item.id" class="py-3 px-2 sm:px-4 text-center text-slate-600 dark:text-slate-400 text-[10px] sm:text-xs max-w-[130px] leading-tight">
+                                        г. {{ item.city }}, {{ item.address }}
+                                    </td>
+                                </tr>
+                                <!-- Онлайн запись -->
+                                <tr>
+                                    <td class="py-3 px-2 sm:px-4 font-extrabold text-slate-500 dark:text-slate-400">Онлайн-запись</td>
+                                    <td v-for="item in comparisonList" :key="item.id" class="py-3 px-2 sm:px-4 text-center">
+                                        <span v-if="item.has_online_booking" class="text-green-600 dark:text-green-400 font-bold flex items-center justify-center gap-1">
+                                            <i class="fa-solid fa-circle-check text-xs sm:text-sm"></i> <span class="text-[11px] sm:text-xs">Есть</span>
+                                        </span>
+                                        <span v-else class="text-slate-400 dark:text-slate-500 flex items-center justify-center gap-1">
+                                            <i class="fa-solid fa-circle-xmark text-xs sm:text-sm"></i> <span class="text-[11px] sm:text-xs">Нет</span>
+                                        </span>
+                                    </td>
+                                </tr>
+                                <!-- Телефон -->
+                                <tr>
+                                    <td class="py-3 px-2 sm:px-4 font-extrabold text-slate-500 dark:text-slate-400">Контакты</td>
+                                    <td v-for="item in comparisonList" :key="item.id" class="py-3 px-2 sm:px-4 text-center">
+                                        <a :href="'tel:' + item.phone" class="text-blue-600 dark:text-blue-400 hover:underline font-bold text-[10px] sm:text-xs block">{{ item.phone }}</a>
+                                    </td>
+                                </tr>
+                                <!-- Действия -->
+                                <tr>
+                                    <td class="py-3 px-2 sm:px-4 font-extrabold text-slate-500 dark:text-slate-400">Действие</td>
+                                    <td v-for="item in comparisonList" :key="item.id" class="py-3 px-2 sm:px-4 text-center">
+                                        <div class="flex flex-col gap-1.5 max-w-[110px] sm:max-w-[140px] mx-auto">
+                                            <a :href="item.website_url" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-1.5 sm:py-2 px-2.5 sm:px-3 rounded-lg sm:rounded-xl text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow-sm transition-all">
+                                                На сайт <i class="fa-solid fa-arrow-up-right-from-square text-[8px] sm:text-[10px]"></i>
+                                            </a>
+                                            <button @click="toggleComparison(item)" class="text-rose-500 hover:text-rose-600 text-[10px] sm:text-xs font-bold py-0.5 transition-colors">
+                                                Убрать
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- СТИЛЬНЫЙ ФУТЕР (Премиальный глубокий контрастный темный оттенок для стильного завершения интерфейса) -->
+        <footer class="bg-slate-950 border-t border-slate-900 py-10 px-4 sm:px-6 transition-colors duration-300">
+            <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                <!-- Левая сторона: Логотип и Копирайт -->
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        <span class="text-blue-400 text-sm sm:text-base font-black tracking-tight flex items-center gap-1.5">
+                            <i class="fa-solid fa-heart-pulse text-blue-400"></i>MedServicePrice<span class="text-white">.kz</span>
+                        </span>
+                    </div>
+                    
+                    <p class="text-[10px] sm:text-xs leading-relaxed text-slate-400 font-medium max-w-3xl">
+                        © 2026, ТОО «MedServicePrice». Все права защищены.
+                        <br>
+                        <span class="text-slate-500">Независимый справочный сервис цен на медицинские услуги в Казахстане. Информация носит ознакомительный характер. Перед прохождением процедур обязательно проконсультируйтесь с врачом.</span>
+                    </p>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Загрузка скриптов -->
+    <script src="api.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
