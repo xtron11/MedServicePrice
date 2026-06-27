@@ -13,10 +13,18 @@ from back.app.config import settings
 from back.app.db_service import save_parsed_data, save_clinic_branches, log_parser_execution
 
 CITIES = [
-    "almaty", "astana", "shymkent", "karaganda", "aktobe",
-    "pavlodar", "semey", "atyrau", "kostanay", "kokshetau",
-    "taraz", "kyzylorda", "ust-kamenogorsk", "aktau", "uralsk",
-    "temirtau", "shakhtinsk", "abay", "balkhash", "saran",
+    "abay", "akkol", "akkiistau", "akmol", "aksai", "aksu", "aksukent", "aktau", "aktobe", "aktogay", "alatau", "alga", "almaty", "altai", "aralsk", "arkalyk", "arshaly", "arys", "ashchybulak", "asykata",
+    "astana", "astrakhanka", "atakent", "atameken", "atbasar", "atyrau", "auliekol", "ayagoz",
+    "baisarke", "bakanas", "baikonur", "balkashino", "balkhash", "balpyk bi", "bayanauyl", "beineu", "besagash", "beskaragay", "bishkul", "boraldai", "bulaevo", "chapai", "chingirlau", "chundzha", "denisovka", "dossor",
+    "ekibastuz", "emba", "erkingala", "esik", "esil", "fedorovka", "glubokoe", "inder", "irgeli", "irtyshsk", "jambyl", "janatas", "zhalagash", 
+    "zhanalaik", "zhanaarka", "zhanaozen", "zhanakorgan", "zhansugurov", "zharkent", "zhapek batyr", "zhelezinka", "zhezkazgan", "zhibek zholy", "zhitikara", "zhympity",
+    "kabanbai", "kairat", "kalbatau", "kalininskoe", "kandyagash", "karabalyk", "karabulak", "karaganda", "karaoi", "karasai", "karatau", "karmakshi", "kaskelen","kasym kaisenov",
+    "katon-karagai", "kazaly", "kazygurt", "kenen azerbaev", "kentau", "khromtau", "koksai", "koksayek", "kokshetau", "konaev", "kordai", "kosshyn", "kostanay", "kulan", "kulsary", "kurmangazy", "kyzylzhar", "kyzylorda",
+    "lenger", "lisakovsk",  "makat",  "makinsk", "malaya churakovka", "mamlyutka", "mangistau", "makhambet", "mendykara", "merke", "miyaly", "myrzakent",
+    "novoishimskoe", "ordabasy", "orkeniet", "otegen batyr", "pavlodar", "petropavlovsk", "presnovka", "raiymbek", "ridder", "rudny", "s.podstepnoe", "sagyz", "saumalkol", "saran", "sarkan", "saryagash", "sarykemer", "sarykol", "saryozek", "satpaev",
+    "semey", "sergeevka", "shalkar", "shamalgan", "shanyrak", "shardara", "shaulder", "shayan", "shakhtinsk", "shubarkuduk", "shubarsu", "shchuchinsk", "shelek", "shemonaikha", "shetpe", "shieli", "shortandy", "sholakorgan", "shu", "shymkent", "smirnovo", "stepnogorsk",
+    "taiynsha", "talapker", "taldykorgan", "talgar", "taras", "taraz", "taskala", "tekeli", "temirtau", "terenkol", "terenozek", "tobyl", "tole bi", "turar ryskulov", "turkestan", "shcherbakty", 
+    "uarkhal", "urdjar", "ust-kamenogorsk", "ushkonyr",  "ushtobe", "uzynagash", "uzunkol", "yavlenka", "yntymak"
 ]
 
 # ID города для куки currentCity — только те, у кого есть страница кабинетов
