@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # 1. База данных Postgres
   db:
     image: postgres:15
     environment:
@@ -8,9 +9,39 @@ services:
       POSTGRES_PASSWORD: root
       POSTGRES_DB: medprice_db
     ports:
-      - "5433:5432"  # Внешний порт меняем на 5433, чтобы не пересекаться с локальным Postgres
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d medprice_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Бэкенд на FastAPI
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL_sync=postgresql://postgres:root@db:5432/medprice_db
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 3. Планировщик очередей (scheduler.py)
+  scheduler:
+    build: .
+    command: python scheduler.py
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL_sync=postgresql://postgres:root@db:5432/medprice_db
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:
