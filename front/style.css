@@ -1,0 +1,256 @@
+/* Базовые настройки, которые не покрыты Tailwind CDN */
+
+html {
+    /* Плавный скролл при клике на якорные ссылки (например, в меню шапки) */
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: #f1f5f9;
+    background-image: radial-gradient(at 0% 0%, rgba(186, 230, 253, 0.45) 0px, transparent 50%),
+                      radial-gradient(at 50% 0%, rgba(224, 242, 254, 0.4) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, rgba(216, 180, 254, 0.35) 0px, transparent 50%);
+    background-attachment: fixed;
+}
+
+.dark body {
+    background-color: #030712;
+    background-image: radial-gradient(at 0% 0%, rgba(30, 41, 59, 0.6) 0px, transparent 50%),
+                      radial-gradient(at 50% 0%, rgba(15, 23, 42, 0.6) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, rgba(15, 23, 42, 0.5) 0px, transparent 50%);
+    background-attachment: fixed;
+}
+
+/* Кастомизация скроллбара */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9; /* slate-50 */
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: #1e293b; /* slate-800 */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* slate-300 */
+    border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #475569; /* slate-600 */
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* slate-400 */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b; /* slate-500 */
+}
+
+/* Дополнительные кастомные анимации и фиксы */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes logo-heartbeat {
+    0% { transform: scale(1); }
+    14% { transform: scale(1.15); }
+    28% { transform: scale(1); }
+    42% { transform: scale(1.15); }
+    70% { transform: scale(1); }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.logo-heartbeat:hover i {
+    animation: logo-heartbeat 1.3s infinite ease-in-out;
+}
+
+.card-hover-effect {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover-effect:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -8px rgba(59, 130, 246, 0.15), 0 8px 16px -8px rgba(0, 0, 0, 0.06);
+}
+
+.button-press-effect:active {
+    transform: scale(0.97);
+}
+
+.modal-animate-in {
+    animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Анимации для Vue transition "toast-fade" */
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast-fade-enter-from {
+    opacity: 0;
+    transform: translate(-50%, -24px) scale(0.95);
+}
+
+.toast-fade-leave-to {
+    opacity: 0;
+    transform: translate(-50%, -16px) scale(0.95);
+}
+
+/* Предотвращение мерцания Vue до инициализации (вместе с директивой v-cloak) */
+[v-cloak] {
+    display: none !important;
+}
+
+/* Бегущая строка (Infinite Marquee) для логотипов партнеров */
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+    display: flex;
+    width: max-content;
+    animation: marquee 35s linear infinite;
+}
+
+/* Очистка стилей для кастомного Leaflet DivIcon */
+.custom-leaflet-marker {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* === КАСTОМИЗАЦИЯ ВСПЛЫВАЮЩИХ ОКОН (POPUPS) LEAFLET === */
+.leaflet-popup-content-wrapper {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-radius: 1.25rem !important;
+    padding: 2px !important;
+    box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.12), 0 10px 15px -6px rgba(15, 23, 42, 0.04) !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.dark .leaflet-popup-content-wrapper {
+    background: #1e293b !important; /* slate-800 */
+    color: #f1f5f9 !important;
+    border-color: #334155 !important; /* slate-700 */
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+.leaflet-popup-content {
+    margin: 12px 14px !important;
+    line-height: 1.4 !important;
+}
+
+.leaflet-popup-tip {
+    background: #ffffff !important;
+    box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.12) !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.dark .leaflet-popup-tip {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+/* Кнопка закрытия popup */
+.leaflet-container a.leaflet-popup-close-button {
+    color: #64748b !important;
+    padding: 8px 8px 0 0 !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    transition: color 0.2s ease !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+    color: #ef4444 !important; /* Красный цвет при наведении */
+}
+
+.dark .leaflet-container a.leaflet-popup-close-button {
+    color: #94a3b8 !important;
+}
+
+.dark .leaflet-container a.leaflet-popup-close-button:hover {
+    color: #f87171 !important;
+}
+
+/* === УЛУЧШЕНИЯ ЧИТАЕМОСТИ И КОНТРАСТА СВЕТЛОЙ ТЕМЫ === */
+html:not(.dark) body {
+    color: #0f172a !important; /* Глубокий slate-900 цвет по умолчанию */
+}
+
+/* Более четкие карточки с более глубокими тенями для структурного разделения */
+html:not(.dark) .bg-white,
+html:not(.dark) .bg-white\/60,
+html:not(.dark) .bg-white\/70,
+html:not(.dark) .bg-white\/80,
+html:not(.dark) .bg-white\/95 {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important; /* Четкий slate-300 вместо блеклого slate-200 */
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 16px -6px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Текст средней степени контрастности (slate-500/slate-600) делаем темнее и глубже */
+html:not(.dark) .text-slate-400 {
+    color: #475569 !important; /* Увеличиваем контраст до slate-600 */
+}
+
+html:not(.dark) .text-slate-500 {
+    color: #334155 !important; /* Увеличиваем контраст до slate-700 */
+}
+
+html:not(.dark) .text-slate-600 {
+    color: #1e293b !important; /* Увеличиваем контраст до slate-800 */
+}
+
+html:not(.dark) .text-slate-700 {
+    color: #0f172a !important; /* Увеличиваем контраст до slate-900 */
+}
+
+/* Делаем селекты и поля ввода максимально контрастными и удобными для чтения */
+html:not(.dark) input,
+html:not(.dark) select {
+    border-color: #cbd5e1 !important; /* slate-300 */
+    color: #0f172a !important; /* slate-900 */
+    background-color: #f8fafc !important; /* slate-50 */
+}
+
+html:not(.dark) input::placeholder {
+    color: #64748b !important; /* slate-500 */
+}
+
+html:not(.dark) select option {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+}
+
+/* Более заметные кнопки навигации и управления в светлой теме */
+html:not(.dark) .bg-slate-100 {
+    background-color: #e2e8f0 !important; /* slate-200 */
+}
+
+html:not(.dark) .border-slate-200 {
+    border-color: #cbd5e1 !important; /* slate-300 */
+}
+
