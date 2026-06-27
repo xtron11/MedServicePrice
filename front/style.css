@@ -1,0 +1,139 @@
+/* Базовые настройки, которые не покрыты Tailwind CDN */
+
+html {
+    /* Плавный скролл при клике на якорные ссылки (например, в меню шапки) */
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: #f8fafc;
+    background-image: radial-gradient(at 0% 0%, rgba(219, 234, 254, 0.4) 0px, transparent 50%),
+                      radial-gradient(at 50% 0%, rgba(224, 242, 254, 0.35) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, rgba(243, 232, 255, 0.4) 0px, transparent 50%);
+    background-attachment: fixed;
+}
+
+.dark body {
+    background-color: #020617;
+    background-image: radial-gradient(at 0% 0%, rgba(30, 41, 59, 0.5) 0px, transparent 50%),
+                      radial-gradient(at 50% 0%, rgba(15, 23, 42, 0.5) 0px, transparent 50%),
+                      radial-gradient(at 100% 0%, rgba(15, 23, 42, 0.4) 0px, transparent 50%);
+    background-attachment: fixed;
+}
+
+/* Кастомизация скроллбара */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9; /* slate-50 */
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: #1e293b; /* slate-800 */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* slate-300 */
+    border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #475569; /* slate-600 */
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* slate-400 */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b; /* slate-500 */
+}
+
+/* Дополнительные кастомные анимации и фиксы */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes logo-heartbeat {
+    0% { transform: scale(1); }
+    14% { transform: scale(1.15); }
+    28% { transform: scale(1); }
+    42% { transform: scale(1.15); }
+    70% { transform: scale(1); }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.logo-heartbeat:hover i {
+    animation: logo-heartbeat 1.3s infinite ease-in-out;
+}
+
+.card-hover-effect {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover-effect:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -8px rgba(59, 130, 246, 0.15), 0 8px 16px -8px rgba(0, 0, 0, 0.06);
+}
+
+.button-press-effect:active {
+    transform: scale(0.97);
+}
+
+.modal-animate-in {
+    animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Анимации для Vue transition "toast-fade" */
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast-fade-enter-from {
+    opacity: 0;
+    transform: translate(-50%, -24px) scale(0.95);
+}
+
+.toast-fade-leave-to {
+    opacity: 0;
+    transform: translate(-50%, -16px) scale(0.95);
+}
+
+/* Предотвращение мерцания Vue до инициализации (вместе с директивой v-cloak) */
+[v-cloak] {
+    display: none !important;
+}
+
+/* Бегущая строка (Infinite Marquee) для логотипов партнеров */
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+    display: flex;
+    width: max-content;
+    animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+    animation-play-state: paused;
+}
