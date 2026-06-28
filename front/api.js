@@ -117,14 +117,15 @@ const MedicalApi = {
     async getSuggestions(query = '') {
         try {
             const qVal = (query || '').trim();
+            // По Swagger ограничение minLength: 2, поэтому если меньше 2 символов, не шлем запрос
+            if (qVal.length < 2) {
+                return null;
+            }
             const encodedQuery = encodeURIComponent(qVal);
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2000);
             
-            // Если запрос пустой, пробуем запросить без параметров или с пустыми параметрами для получения дефолтных популярных подсказок
-            const url = qVal 
-                ? `${this.baseUrl}/api/suggest?q=${encodedQuery}&query=${encodedQuery}`
-                : `${this.baseUrl}/api/suggest`;
+            const url = `${this.baseUrl}/api/suggest?q=${encodedQuery}`;
 
             const res = await fetch(url, {
                 signal: controller.signal,
@@ -135,13 +136,26 @@ const MedicalApi = {
             if (res.ok) {
                 const data = await res.json();
                 this.isConnected = true;
+                
+                let rawSuggestions = [];
                 if (Array.isArray(data)) {
-                    return data;
+                    rawSuggestions = data;
                 } else if (data && Array.isArray(data.suggestions)) {
-                    return data.suggestions;
+                    rawSuggestions = data.suggestions;
                 } else if (data && Array.isArray(data.results)) {
-                    return data.results;
+                    rawSuggestions = data.results;
                 }
+
+                // Преобразуем массив объектов или строк в массив строк
+                return rawSuggestions
+                    .map(item => {
+                        if (!item) return '';
+                        if (typeof item === 'object') {
+                            return item.value || item.name || '';
+                        }
+                        return String(item);
+                    })
+                    .filter(Boolean);
             }
         } catch (e) {
             console.warn("MedicalApi: Не удалось получить подсказки с сервера.", e.message);

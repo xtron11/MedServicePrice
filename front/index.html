@@ -91,7 +91,6 @@
                         <!-- Локальные волны пульсации вокруг сердца (только при наведении мыши) -->
                         <div v-if="isLogoHovered" class="absolute bg-pulse-ripple bg-pulse-ripple-1 pointer-events-none"></div>
                         <div v-if="isLogoHovered" class="absolute bg-pulse-ripple bg-pulse-ripple-2 pointer-events-none"></div>
-                        <div v-if="isLogoHovered" class="absolute bg-pulse-ripple bg-pulse-ripple-3 pointer-events-none"></div>
                         
                         <!-- Сама иконка сердца -->
                         <i class="fa-solid fa-heart-pulse text-blue-400 text-lg sm:text-2xl transition-transform duration-300 relative z-10"></i>
@@ -136,18 +135,18 @@
                 </p>
             </div>
 
-           <!-- Блок Поиска (Премиальный стеклянный дизайн с размытием заднего фона и мягким парящим эффектом) -->
-            <div :class="hasSearched ? 'sticky top-16 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md py-3 px-4 sm:py-4 sm:px-8 border-b sm:border border-slate-200/50 dark:border-slate-800/60 sm:rounded-3xl mb-6 shadow-md' : 'mb-12 bg-white/70 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/80 dark:border-slate-800/50 p-6 sm:p-10 rounded-[2rem] shadow-[0_30px_70px_-15px_rgba(59,130,246,0.08)] dark:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.4)] relative overflow-hidden'" class="transition-all duration-300">
+            <!-- Блок Поиска (Премиальный стеклянный дизайн с размытием заднего фона и мягким парящим эффектом) -->
+            <div :class="hasSearched ? 'sticky top-16 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md py-2.5 px-3 sm:py-3.5 sm:px-6 border-b sm:border border-slate-200/50 dark:border-slate-800/60 sm:rounded-3xl mb-6 shadow-md' : 'mb-12 bg-white/70 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/80 dark:border-slate-800/50 p-6 sm:p-10 rounded-[2rem] shadow-[0_30px_70px_-15px_rgba(59,130,246,0.08)] dark:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.4)] relative overflow-hidden'" class="transition-all duration-300">
                 <!-- Декоративные фоновые градиенты для придания красивой глубины фону (только до поиска) -->
                 <div v-if="!hasSearched" class="absolute -top-40 -left-40 w-96 h-96 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-[100px] pointer-events-none"></div>
                 <div v-if="!hasSearched" class="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
-                <!-- Переключатель категорий услуг (Скрываем при поиске для фикса адаптива на мобильных) -->
-                <div v-show="!hasSearched" class="flex flex-wrap justify-center mb-6 sm:mb-8 gap-2 p-1.5 bg-slate-100/60 dark:bg-slate-950/60 border border-slate-200/50 dark:border-slate-800/40 rounded-3xl sm:rounded-full w-fit mx-auto shadow-inner relative z-10">
+                <!-- Переключатель категорий услуг (динамически по данным из API) -->
+                <div v-if="!hasSearched" class="flex flex-wrap justify-center mb-8 gap-2.5 p-1.5 bg-slate-100/60 dark:bg-slate-950/60 border border-slate-200/50 dark:border-slate-800/40 rounded-full w-fit mx-auto shadow-inner relative z-10">
                     <!-- Все категории -->
                     <button 
                         @click="filters.category = ''; if (hasSearched) searchServices()"
-                        class="px-4 py-2 sm:px-7 sm:py-3.5 rounded-full font-bold text-xs sm:text-sm tracking-wide transition-all duration-200 cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                        class="px-5 py-2.5 sm:px-7 sm:py-3.5 rounded-full font-bold text-xs sm:text-sm tracking-wide transition-all duration-200 cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                         :class="!filters.category ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-[0_4px_12px_rgba(59,130,246,0.12)] border border-slate-100 dark:border-slate-700/50 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
                     >
                         <i class="fa-solid fa-layer-group text-sm"></i>
@@ -159,7 +158,7 @@
                         v-for="cat in categoriesList" 
                         :key="cat.value"
                         @click="filters.category = cat.value; if (hasSearched) searchServices()"
-                        class="px-4 py-2 sm:px-7 sm:py-3.5 rounded-full font-bold text-xs sm:text-sm tracking-wide transition-all duration-200 cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                        class="px-5 py-2.5 sm:px-7 sm:py-3.5 rounded-full font-bold text-xs sm:text-sm tracking-wide transition-all duration-200 cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                         :class="filters.category === cat.value ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-[0_4px_12px_rgba(59,130,246,0.12)] border border-slate-100 dark:border-slate-700/50 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
                     >
                         <i class="fa-solid text-sm" :class="cat.value === 'laboratory' ? 'fa-flask-vial' : (cat.value === 'doctor' ? 'fa-user-doctor' : (cat.value === 'diagnostics' ? 'fa-heart-pulse' : 'fa-syringe'))"></i>
@@ -167,17 +166,18 @@
                     </button>
                 </div>
                 
-                <div :class="!hasSearched ? 'max-w-3xl mx-auto shadow-[0_20px_50px_rgba(59,130,246,0.06)] border-slate-200/50 dark:border-slate-700/50 rounded-3xl' : 'shadow-sm border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl'" class="bg-white/95 dark:bg-slate-800/90 backdrop-blur-md p-2 sm:p-4 border flex flex-col sm:flex-row gap-2 sm:gap-3 transition-all duration-300 relative z-10">
+                <div :class="!hasSearched ? 'max-w-3xl mx-auto shadow-[0_20px_50px_rgba(59,130,246,0.06)] border-slate-200/50 dark:border-slate-700/50 p-3 sm:p-4 rounded-3xl flex flex-col md:flex-row gap-3' : 'shadow-sm border-slate-200 dark:border-slate-700 p-1.5 sm:p-2.5 rounded-2xl flex flex-row gap-2'" class="bg-white/95 dark:bg-slate-800/90 backdrop-blur-md border transition-all duration-300 relative z-10">
                     <!-- Поле ввода услуги -->
                     <div class="relative flex-1">
-                        <i class="fa-solid fa-magnifying-glass absolute left-4 sm:left-5 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
+                        <i :class="hasSearched ? 'left-4' : 'left-5'" class="fa-solid fa-magnifying-glass absolute top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 transition-all"></i>
                         <input 
                             v-model="searchQuery" 
                             @keyup.enter="searchServices"
                             list="service-suggestions"
                             type="text" 
-                            placeholder="Анализ крови, УЗИ, МРТ..." 
-                            class="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-250/50 dark:border-slate-700/80 dark:text-white rounded-xl sm:rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/80 hover:bg-slate-100/50 dark:hover:bg-slate-900/80 transition-all text-sm font-semibold shadow-inner"
+                            placeholder="Например: Общий анализ крови, УЗИ, МРТ..." 
+                            :class="hasSearched ? 'pl-10 pr-3 py-2 text-xs sm:text-sm rounded-xl' : 'pl-12 pr-4 py-3.5 rounded-2xl text-sm'"
+                            class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-250/50 dark:border-slate-700/80 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/80 hover:bg-slate-100/50 dark:hover:bg-slate-900/80 transition-all font-semibold shadow-inner"
                         >
                         <datalist id="service-suggestions">
                             <option v-for="suggestion in suggestions" :key="suggestion" :value="suggestion"></option>
@@ -188,10 +188,11 @@
                     <button 
                         @click="searchServices" 
                         :disabled="isLoading"
-                        class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white font-extrabold px-6 sm:px-9 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl transition-all duration-250 text-sm flex items-center justify-center sm:min-w-[145px] cursor-pointer shadow-md shadow-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 button-press-effect"
+                        :class="hasSearched ? 'px-4 py-2 rounded-xl text-xs sm:text-sm min-w-[70px] sm:min-w-[120px]' : 'px-9 py-3.5 rounded-2xl text-sm min-w-[145px]'"
+                        class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white font-extrabold transition-all duration-250 flex items-center justify-center cursor-pointer shadow-md shadow-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 button-press-effect"
                     >
-                        <span v-if="!isLoading" class="flex items-center gap-1.5">
-                            <i class="fa-solid fa-magnifying-glass"></i> <span class="sm:inline">Найти</span>
+                        <span v-if="!isLoading" class="flex items-center gap-1">
+                            <i class="fa-solid fa-magnifying-glass"></i> <span :class="hasSearched ? 'hidden sm:inline' : 'inline'">Найти</span>
                         </span>
                         <i v-else class="fa-solid fa-circle-notch fa-spin"></i>
                     </button>
@@ -217,44 +218,44 @@
             </div>
 
             <!-- Бегущая строка с партнерами/клиниками (только до поиска) -->
-            <div v-if="!hasSearched" class="mt-16 w-full max-w-full overflow-hidden relative">
+            <div v-if="!hasSearched" class="mt-16 max-w-5xl mx-auto overflow-hidden relative">
                 <div class="text-center mb-6">
                     <p class="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Цены из крупнейших лабораторий и клиник РК</p>
                 </div>
                 
-                <!-- Градиентное размытие по бокам для премиум-эффекта (сделали шире для больших экранов) -->
-                <div class="absolute left-0 top-10 bottom-0 w-16 sm:w-32 bg-gradient-to-r from-slate-100 dark:from-slate-950 to-transparent z-10 pointer-events-none"></div>
-                <div class="absolute right-0 top-10 bottom-0 w-16 sm:w-32 bg-gradient-to-l from-slate-100 dark:from-slate-950 to-transparent z-10 pointer-events-none"></div>
+                <!-- Градиентное размытие по бокам для премиум-эффекта -->
+                <div class="absolute left-0 top-10 bottom-0 w-16 bg-gradient-to-r from-slate-100 dark:from-slate-950 to-transparent z-10 pointer-events-none"></div>
+                <div class="absolute right-0 top-10 bottom-0 w-16 bg-gradient-to-l from-slate-100 dark:from-slate-950 to-transparent z-10 pointer-events-none"></div>
                 
                 <div class="flex overflow-hidden py-4 select-none">
-                    <div class="animate-marquee flex items-center gap-6 pr-6">
-                        <!-- Первый блок элементов (размножен для длины экрана) -->
-                        <div class="flex items-center gap-6 shrink-0" v-for="i in 4" :key="'g1-'+i">
-                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 w-[220px]">
+                    <div class="animate-marquee flex items-center gap-6">
+                        <!-- Первый круг брендов -->
+                        <div class="flex items-center gap-6">
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200">
                                 <div class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-crown"></i></div>
                                 <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">КДЛ ОЛИМП</span><span class="text-[9px] text-slate-400 font-bold uppercase">Лаборатория</span></div>
                             </div>
-                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 w-[220px]">
-                                <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-user-check"></i></div>
-                                <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">DOQ</span><span class="text-[9px] text-slate-400 font-bold uppercase">Поиск врачей</span></div>
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200">
+                                <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-flask-vial"></i></div>
+                                <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">INVIVO</span><span class="text-[9px] text-slate-400 font-bold uppercase">Сеть центров</span></div>
                             </div>
-                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 w-[220px]">
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200">
                                 <div class="w-8 h-8 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 text-cyan-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-dna"></i></div>
                                 <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">INVITRO</span><span class="text-[9px] text-slate-400 font-bold uppercase">Лаборатория</span></div>
                             </div>
                         </div>
                         
-                        <!-- Точная копия первого блока для бесшовной анимации -->
-                        <div class="flex items-center gap-6 shrink-0" v-for="i in 4" :key="'g2-'+i">
-                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 w-[220px]">
+                        <!-- Копия для бесшовной анимации -->
+                        <div class="flex items-center gap-6">
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200">
                                 <div class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-crown"></i></div>
                                 <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">КДЛ ОЛИМП</span><span class="text-[9px] text-slate-400 font-bold uppercase">Лаборатория</span></div>
                             </div>
-                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 w-[220px]">
-                                <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-user-check"></i></div>
-                                <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">doq.kz</span><span class="text-[9px] text-slate-400 font-bold uppercase">Поиск врачей</span></div>
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200">
+                                <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-flask-vial"></i></div>
+                                <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">INVIVO</span><span class="text-[9px] text-slate-400 font-bold uppercase">Сеть центров</span></div>
                             </div>
-                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 w-[220px]">
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200">
                                 <div class="w-8 h-8 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 text-cyan-500 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-dna"></i></div>
                                 <div class="flex flex-col"><span class="font-black text-xs text-slate-800 dark:text-slate-200">INVITRO</span><span class="text-[9px] text-slate-400 font-bold uppercase">Лаборатория</span></div>
                             </div>
@@ -316,7 +317,7 @@
             <div v-if="hasSearched || isLoading" class="flex flex-col lg:flex-row gap-8 transition-opacity duration-500">
                 
                 <!-- Сайдбар с фильтрами и активными подписками (скрыт на мобильном) -->
-                <aside class="hidden lg:block lg:w-64 flex-shrink-0 lg:sticky lg:top-[340px] lg:self-start space-y-6 z-20">
+                <aside class="hidden lg:block lg:w-64 flex-shrink-0 lg:sticky lg:top-[180px] lg:self-start space-y-6 z-20">
                     <!-- Панель Фильтров -->
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-[0_4px_25px_rgba(0,0,0,0.02)] border border-slate-200 dark:border-slate-700 transition-colors">
                         <h3 class="font-extrabold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
@@ -453,23 +454,28 @@
                                 <!-- Информация -->
                                 <div class="flex-1 w-full flex flex-col justify-between">
                                     <div>
-                                        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3">
-                                            <span @click.prevent="openModal(item)" class="font-black text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors">{{ item.clinic }}</span>
+                                        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2">
+                                            <h4 @click.prevent="openModal(item)" class="font-black text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors">{{ item.service_name }}</h4>
+                                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-[10px] sm:text-xs px-2 py-0.5 rounded-lg font-extrabold border border-slate-200 dark:border-slate-600/40">{{ item.category }}</span>
+                                            <span v-if="item.isRecommended" class="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-extrabold border border-emerald-200/40 dark:border-emerald-900/40">Выгодно</span>
+                                        </div>
+                                        
+                                        <!-- Клиника и ее рейтинг -->
+                                        <div class="flex flex-wrap items-center gap-2 mb-4">
+                                            <span @click.prevent="openModal(item)" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-extrabold text-sm sm:text-base cursor-pointer flex items-center gap-1">
+                                                <i class="fa-solid fa-hospital text-[11px]"></i> {{ item.clinic }}
+                                            </span>
                                             <span class="flex items-center gap-1 text-[10px] sm:text-xs font-black text-amber-800 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-900/30 border border-amber-200/40 dark:border-amber-800/30 px-2 py-0.5 rounded-lg">
                                                 <i class="fa-solid fa-star text-[9px] sm:text-[10px] text-amber-500"></i> {{ item.rating }}
                                             </span>
-                                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-[10px] sm:text-xs px-2 py-0.5 rounded-lg font-extrabold border border-slate-200 dark:border-slate-600/40">{{ item.category }}</span>
-                                            <span v-if="item.isRecommended" class="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-extrabold border border-emerald-200/40 dark:border-emerald-900/40">Выгодно</span>
                                             <!-- Дистанция по геопозиции -->
                                             <span v-if="userLatitude && userLongitude && getDistance(userLatitude, userLongitude, item.lat, item.lng) !== null" class="bg-indigo-50/80 dark:bg-indigo-950/30 text-indigo-800 dark:text-indigo-300 text-[10px] sm:text-xs px-2 py-0.5 rounded-lg font-extrabold border border-indigo-200/50 dark:border-indigo-900/40 flex items-center gap-1">
                                                 <i class="fa-solid fa-route text-[9px] sm:text-[10px] text-indigo-500"></i> ~{{ getDistance(userLatitude, userLongitude, item.lat, item.lng) }} км
                                             </span>
                                         </div>
                                         
-                                        <h4 @click.prevent="openModal(item)" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline font-extrabold text-sm sm:text-base mb-3 sm:mb-4 tracking-tight cursor-pointer inline-block">{{ item.service_name }}</h4>
-                                        
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">
-                                            <p class="flex items-center"><i class="fa-solid fa-location-dot w-4 text-center mr-2 text-blue-500 dark:text-blue-400"></i> г. {{ item.city }}, {{ item.address }}</p>
+                                            <p class="flex items-center"><i class="fa-solid fa-location-dot w-4 text-center mr-2 text-blue-500 dark:text-blue-400"></i> {{ formatFullAddress(item.city, item.address) }}</p>
                                             <p class="flex items-center"><i class="fa-regular fa-clock w-4 text-center mr-2 text-indigo-500 dark:text-indigo-400"></i> {{ item.working_hours }}</p>
                                             <p class="flex items-center"><i class="fa-solid fa-phone w-4 text-center mr-2 text-teal-500 dark:text-teal-400"></i> {{ item.phone }}</p>
                                             <div v-if="item.has_online_booking" class="flex items-center">
@@ -572,7 +578,7 @@
                                         </div>
                                         <div>
                                             <p class="text-xs text-slate-400 dark:text-slate-500">Адрес филиала</p>
-                                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">г. {{ selectedServiceItem.city }}, {{ selectedServiceItem.address }}</p>
+                                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ formatFullAddress(selectedServiceItem.city, selectedServiceItem.address) }}</p>
                                         </div>
                                     </div>
 
@@ -1087,7 +1093,7 @@
                                 <tr>
                                     <td class="py-3 px-2 sm:px-4 font-extrabold text-slate-500 dark:text-slate-400">Адрес</td>
                                     <td v-for="item in comparisonList" :key="item.id" class="py-3 px-2 sm:px-4 text-center text-slate-600 dark:text-slate-400 text-[10px] sm:text-xs max-w-[130px] leading-tight">
-                                        г. {{ item.city }}, {{ item.address }}
+                                        {{ formatFullAddress(item.city, item.address) }}
                                     </td>
                                 </tr>
                                 <!-- Онлайн запись -->

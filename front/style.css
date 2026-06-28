@@ -292,13 +292,35 @@ html:not(.dark) .border-slate-200 {
 }
 
 /* === ИНТЕРАКТИВНЫЕ ВОЛНЫ ПУЛЬСАЦИИ ОТ СЕРДЦА === */
-@keyframes background-pulse-ripple {
-    0% {
+@keyframes ripple-beat-1 {
+    0%, 14% {
         transform: scale(0.6);
         opacity: 0;
     }
     15% {
-        opacity: 0.7;
+        opacity: 0.75;
+    }
+    55% {
+        transform: scale(3.5);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(3.5);
+        opacity: 0;
+    }
+}
+
+@keyframes ripple-beat-2 {
+    0%, 42% {
+        transform: scale(0.6);
+        opacity: 0;
+    }
+    43% {
+        opacity: 0.75;
+    }
+    83% {
+        transform: scale(3.5);
+        opacity: 0;
     }
     100% {
         transform: scale(3.5);
@@ -319,7 +341,6 @@ html:not(.dark) .border-slate-200 {
     box-shadow: 0 0 12px rgba(96, 165, 250, 0.2) inset, 0 0 12px rgba(96, 165, 250, 0.2);
     pointer-events: none;
     transform-origin: center;
-    animation: background-pulse-ripple 3s cubic-bezier(0.1, 0.8, 0.15, 1) infinite;
     z-index: 1;
 }
 
@@ -329,15 +350,11 @@ html:not(.dark) .border-slate-200 {
 }
 
 .bg-pulse-ripple-1 {
-    animation-delay: 0s;
+    animation: ripple-beat-1 1.3s cubic-bezier(0.1, 0.8, 0.15, 1) infinite;
 }
 
 .bg-pulse-ripple-2 {
-    animation-delay: 1s;
-}
-
-.bg-pulse-ripple-3 {
-    animation-delay: 2s;
+    animation: ripple-beat-2 1.3s cubic-bezier(0.1, 0.8, 0.15, 1) infinite;
 }
 
 
