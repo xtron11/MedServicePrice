@@ -51,35 +51,37 @@
 
     <div id="app" v-cloak class="relative z-10">
         <!-- УВЕДОМЛЕНИЕ (PUSH-TOAST) -->
-        <transition name="toast-fade">
-            <div v-if="notification.show" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[200] w-[calc(100%-2rem)] max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-200 dark:border-slate-700 p-4 flex gap-3.5 items-start transition-all duration-300">
-                <!-- Иконка по типу -->
-                <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg" :class="{
-                    'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400': notification.type === 'warning',
-                    'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400': notification.type === 'error',
-                    'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400': notification.type === 'success',
-                    'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400': notification.type === 'info'
-                }">
-                    <i class="fa-solid" :class="{
-                        'fa-triangle-exclamation': notification.type === 'warning',
-                        'fa-circle-xmark': notification.type === 'error',
-                        'fa-circle-check': notification.type === 'success',
-                        'fa-circle-info': notification.type === 'info'
-                    }"></i>
+        <div class="fixed top-6 left-0 right-0 z-[200] flex justify-center px-4 pointer-events-none">
+            <transition name="toast-fade">
+                <div v-if="notification.show" class="pointer-events-auto w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-slate-200 dark:border-slate-700 p-4 flex gap-3.5 items-start transition-all duration-300">
+                    <!-- Иконка по типу -->
+                    <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg" :class="{
+                        'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400': notification.type === 'warning',
+                        'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400': notification.type === 'error',
+                        'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400': notification.type === 'success',
+                        'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400': notification.type === 'info'
+                    }">
+                        <i class="fa-solid" :class="{
+                            'fa-triangle-exclamation': notification.type === 'warning',
+                            'fa-circle-xmark': notification.type === 'error',
+                            'fa-circle-check': notification.type === 'success',
+                            'fa-circle-info': notification.type === 'info'
+                        }"></i>
+                    </div>
+                    
+                    <!-- Текст -->
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-black text-slate-900 dark:text-white tracking-tight mb-0.5">{{ notification.title }}</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-normal">{{ notification.message }}</p>
+                    </div>
+                    
+                    <!-- Кнопка закрытия -->
+                    <button @click="notification.show = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
                 </div>
-                
-                <!-- Текст -->
-                <div class="flex-1 min-w-0">
-                    <h4 class="text-sm font-black text-slate-900 dark:text-white tracking-tight mb-0.5">{{ notification.title }}</h4>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-normal">{{ notification.message }}</p>
-                </div>
-                
-                <!-- Кнопка закрытия -->
-                <button @click="notification.show = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                    <i class="fa-solid fa-xmark text-xs"></i>
-                </button>
-            </div>
-        </transition>
+            </transition>
+        </div>
 
         <!-- Шапка сайта (Новый контрастный глубокий темно-серый цвет для выразительности) -->
         <header class="bg-slate-900 text-slate-100 border-b border-slate-800/80 sticky top-0 z-50 transition-all duration-300">
@@ -142,7 +144,7 @@
                 <div v-if="!hasSearched" class="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
                 <!-- Переключатель категорий услуг (динамически по данным из API) -->
-                <div v-if="!hasSearched" class="flex flex-wrap justify-center mb-8 gap-2.5 p-1.5 bg-slate-100/60 dark:bg-slate-950/60 border border-slate-200/50 dark:border-slate-800/40 rounded-full w-fit mx-auto shadow-inner relative z-10">
+                <div v-if="!hasSearched" class="flex flex-wrap justify-center mb-8 gap-2.5 p-1.5 bg-slate-100/60 dark:bg-slate-950/60 border border-slate-200/50 dark:border-slate-800/40 rounded-3xl sm:rounded-full w-full max-w-md sm:w-fit mx-auto shadow-inner relative z-10">
                     <!-- Все категории -->
                     <button 
                         @click="filters.category = ''; if (hasSearched) searchServices()"
