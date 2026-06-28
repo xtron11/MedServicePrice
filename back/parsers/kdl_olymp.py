@@ -23,7 +23,7 @@ CITIES = [
     "lenger", "lisakovsk",  "makat",  "makinsk", "malaya churakovka", "mamlyutka", "mangistau", "makhambet", "mendykara", "merke", "miyaly", "myrzakent",
     "novoishimskoe", "ordabasy", "orkeniet", "otegen batyr", "pavlodar", "petropavlovsk", "presnovka", "raiymbek", "ridder", "rudny", "s.podstepnoe", "sagyz", "saumalkol", "saran", "sarkan", "saryagash", "sarykemer", "sarykol", "saryozek", "satpaev",
     "semey", "sergeevka", "shalkar", "shamalgan", "shanyrak", "shardara", "shaulder", "shayan", "shakhtinsk", "shubarkuduk", "shubarsu", "shchuchinsk", "shelek", "shemonaikha", "shetpe", "shieli", "shortandy", "sholakorgan", "shu", "shymkent", "smirnovo", "stepnogorsk",
-    "taiynsha", "talapker", "taldykorgan", "talgar", "taras", "taraz", "taskala", "tekeli", "temirtau", "terenkol", "terenozek", "tobyl", "tole bi", "turar ryskulov", "turkestan", "shcherbakty", 
+    "taiynsha", "talapker", "taldykorgan", "talgar", "taraz", "taskala", "tekeli", "temirtau", "terenkol", "terenozek", "tobyl", "tole bi", "turar ryskulov", "turkestan", "shcherbakty", 
     "uarkhal", "urdjar", "ust-kamenogorsk", "ushkonyr",  "ushtobe", "uzynagash", "uzunkol", "yavlenka", "yntymak"
 ]
 
