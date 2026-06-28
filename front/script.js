@@ -299,10 +299,9 @@ createApp({
                 { name: "Общий анализ мочи", icon: "fa-vial" },
                 { name: "Креатинин", icon: "fa-flask-vial" },
                 { name: "Ферритин", icon: "fa-dna" },
-                { name: "Глюкоза (кровь)", icon: "fa-flask" },
-                { name: "Магний (кровь)", icon: "fa-vial" },
-                { name: "Общий холестерин", icon: "fa-heart" },
-                { name: "УЗИ почек", icon: "fa-wave-square" },
+                { name: "Глюкоза", query: "Глюкоза (кровь)", icon: "fa-flask" },
+                { name: "Магний", query: "Магний (кровь)", icon: "fa-vial" },
+                { name: "Холестерин", query: "Общий холестерин", icon: "fa-heart" },
                 { name: "Терапевт", icon: "fa-user-doctor" }
             ],
 
@@ -1110,8 +1109,8 @@ createApp({
             }
         },
 
-        selectPopularService(name) {
-            this.searchQuery = name;
+        selectPopularService(service) {
+            this.searchQuery = typeof service === 'string' ? service : (service.query || service.name);
             this.searchServices();
         },
 
