@@ -19,7 +19,7 @@ from back.app.config import settings
 
 # ─── КОНСТАНТЫ И НАСТРОЙКИ ───────────────────────────────────────────────────
 
-THRESHOLD = 90
+THRESHOLD = 85
 
 # Маркеры, которые КРИТИЧЕСКИ меняют смысл услуги
 STRICT_MARKERS = {
@@ -230,6 +230,62 @@ SEED_DATA = [
     ("УЗИ плевральной полости", "Ультразвуковое исследование плевральной полости", ServiceCategory.diagnostics),
     ("УЗИ малого таза", "Ультразвуковое исследование органов малого таза, УЗИ ОМТ", ServiceCategory.diagnostics),
     ("УЗИ щитовидной железы", "Ультразвуковое исследование щитовидной железы", ServiceCategory.diagnostics),
+    
+    # --- ЛАБОРАТОРИЯ: Гормоны ---
+    ("Эстрадиол", "E2, Estradiol", ServiceCategory.laboratory),
+    ("Прогестерон", "Progesterone, Прогестерон крови", ServiceCategory.laboratory),
+    ("Тестостерон общий", "Testosterone, Тестостерон", ServiceCategory.laboratory),
+    ("Тестостерон свободный", "Free Testosterone, Св. тестостерон", ServiceCategory.laboratory),
+    ("ФСГ", "Фолликулостимулирующий гормон, FSH", ServiceCategory.laboratory),
+    ("ЛГ", "Лютеинизирующий гормон, LH", ServiceCategory.laboratory),
+    ("Пролактин", "Prolactin, PRL", ServiceCategory.laboratory),
+    ("АМГ", "Антимюллеров гормон, AMH", ServiceCategory.laboratory),
+    ("Кортизол", "Cortisol, Кортизол крови", ServiceCategory.laboratory),
+    ("ДГЭА-С", "DHEA-S, Дегидроэпиандростерон сульфат", ServiceCategory.laboratory),
+
+    # --- ЛАБОРАТОРИЯ: Биохимия ---
+    ("АЛТ", "Аланинаминотрансфераза, ALT, SGPT", ServiceCategory.laboratory),
+    ("АСТ", "Аспартатаминотрансфераза, AST, SGOT", ServiceCategory.laboratory),
+    ("Щелочная фосфатаза", "ЩФ, Alkaline phosphatase, ALP", ServiceCategory.laboratory),
+    ("ГГТП", "Гамма-глутамилтрансфераза, GGT", ServiceCategory.laboratory),
+    ("Амилаза", "Амилаза крови, Amylase", ServiceCategory.laboratory),
+    ("Липаза", "Lipase, Липаза крови", ServiceCategory.laboratory),
+    ("С-реактивный белок", "СРБ, CRP, C-reactive protein", ServiceCategory.laboratory),
+    ("Мочевая кислота", "Uric acid, Урат", ServiceCategory.laboratory),
+    ("Общий белок", "Total protein, Белок общий", ServiceCategory.laboratory),
+    ("Альбумин", "Albumin, Альбумин крови", ServiceCategory.laboratory),
+    ("Фибриноген", "Fibrinogen", ServiceCategory.laboratory),
+    ("МНО", "Протромбиновое время, PT, INR, МНО", ServiceCategory.laboratory),
+
+    # --- ЛАБОРАТОРИЯ: Инфекции и онкомаркеры ---
+    ("ПСА общий", "PSA, Простатический антиген, Prostate specific antigen", ServiceCategory.laboratory),
+    ("АФП", "Альфа-фетопротеин, AFP", ServiceCategory.laboratory),
+    ("ХГЧ", "Хорионический гонадотропин, HCG, бета-ХГЧ", ServiceCategory.laboratory),
+    ("ВИЧ антитела", "HIV, ВИЧ, Антитела к ВИЧ", ServiceCategory.laboratory),
+    ("Гепатит B (HBsAg)", "HBsAg, Поверхностный антиген гепатита B", ServiceCategory.laboratory),
+    ("Гепатит C антитела", "Anti-HCV, Антитела к гепатиту С", ServiceCategory.laboratory),
+    ("ПЦР на COVID-19", "COVID-19 ПЦР, SARS-CoV-2, Мазок на COVID", ServiceCategory.laboratory),
+
+    # --- ДИАГНОСТИКА ---
+    ("ЭКГ", "Электрокардиограмма, Кардиограмма, ECG", ServiceCategory.diagnostics),
+    ("УЗИ сердца", "ЭхоКГ, Эхокардиография, УЗИ сердца", ServiceCategory.diagnostics),
+    ("Флюорография", "ФЛГ, Рентген лёгких", ServiceCategory.diagnostics),
+    ("МРТ головного мозга", "МРТ мозга, MRI brain", ServiceCategory.diagnostics),
+    ("КТ органов грудной клетки", "КТ грудной клетки, CT chest", ServiceCategory.diagnostics),
+
+    # --- ВРАЧИ ---
+    ("Приём терапевта", "Консультация терапевта, Терапевт первичный", ServiceCategory.doctor),
+    ("Приём кардиолога", "Консультация кардиолога, Кардиолог", ServiceCategory.doctor),
+    ("Приём гинеколога", "Консультация гинеколога, Акушер-гинеколог", ServiceCategory.doctor),
+    ("Приём невролога", "Консультация невролога, Невропатолог", ServiceCategory.doctor),
+    ("Приём эндокринолога", "Консультация эндокринолога, Эндокринолог", ServiceCategory.doctor),
+    ("Приём педиатра", "Консультация педиатра, Педиатр", ServiceCategory.doctor),
+    ("Приём уролога", "Консультация уролога, Уролог", ServiceCategory.doctor),
+    ("Приём хирурга", "Консультация хирурга, Хирург", ServiceCategory.doctor),
+    ("Приём офтальмолога", "Консультация офтальмолога, Офтальмолог", ServiceCategory.doctor),
+    ("Приём дерматолога", "Консультация дерматолога, Дерматолог", ServiceCategory.doctor),
+    ("Приём ЛОР врача", "ЛОР, Оториноларинголог, Консультация ЛОР", ServiceCategory.doctor),
+    ("Приём гастроэнтеролога", "Консультация гастроэнтеролога, Гастроэнтеролог", ServiceCategory.doctor),
 ]
 
 def seed_catalog():

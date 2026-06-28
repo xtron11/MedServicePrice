@@ -53,69 +53,42 @@ SPECIALTY_LABELS = {
 
 # Хардкод ID — используется как фоллбек если API справочника недоступен
 FALLBACK_SPECIALTY_MAP = {
-    "terapevt": 97,
     "akusher-ginekolog": 73,
-    "pediatr": 78,
-    "lor": 72,              # Отоларинголог
-    "nevrolog": 61,          # Невропатолог
-    "kardiolog": 41,
-    "hirurg": 102,
-    "dermatolog": 26,        # Дерматовенеролог
-    "oftalmolog": 73,        # Окулист
-    "urolog": 100,
-    "endokrinolog": 105,
-    "gastroenterolog": 11,
-    "ortoped": 98,           # Травматолог-ортопед
     "allergolog": 74,         # Иммунолог
-    "anesteziolog-reanimatolog": 2,
-    
-    # Узкие специалисты (Взрослые и детские)
-    "uzi-specialist": 99,    # Врач УЗИ / Сонолог
-    "stomatolog": 94,        # Стоматолог (общий / хирург / ортодонт)
-    "nevrolog-detskiy": 62,  # Детский невролог
-    "proktolog": 84,         # Колопроктолог
-    "onkolog": 69,          # Онколог / Маммолог
-    "mammolog": 51,          # Чистый маммолог
-    "nevropatolog": 61,      # Дубликат для маппинга невролога
-    "ginekolog": 13,         # Дубликат для гинеколога
-    "ftiziatr": 101,
-    "pulmonolog": 85,
-    "revmatolog": 87,
-    "nefrolog": 64,          # Специалист по почкам
-    "psihoterapevt": 83,     # Психотерапевт / Психиатр
-    "gematolog": 12,         # Специалист по крови
-    "infekcionist": 37,
-    "allergolog-detskiy": 3, # Детский аллерголог
-    "hirurg-detskiy": 103,   # Детский хирург
-    "ortoped-detskiy": 71,   # Детский ортопед / Траматолог
-    "ginekolog-detskiy": 22, # Детский гинеколог
-    "urolog-detskiy": 110,   # Детский уролог
-    "kardiolog-detskiy": 42, # Детский кардиолог
-    "endokrinolog-detskiy": 106, # Детский эндокринолог
-    "gastroenterolog-detskiy": 14, # Детский гастроэнтеролог
-
-    # Специфические и диагностические направления
-    "allergolog-immunolog": 2,
-    "venerolog": 75,
     "androlog": 1,           # Мужское здоровье
-    "gomeopat": 23,
-    "dietolog": 27,
-    "implantolog": 33,       # Стоматолог-имплантолог
-    "kinesteziterapevt": 43, # Мануальный терапевт / Реабилитолог
-    "kosmetolog": 46,
-    "logoped": 49,
-    "narkolog": 59,
-    "ortodont": 70,          # Исправление прикуса
-    "osteopat": 74,
-    "parodontolog": 77,
-    "psiholog": 82,
-    "radiolog": 86,          # Рентгенолог / МРТ / КТ
-    "refleksoterapevt": 89,  # Иглоукалывание
-    "seksopatolog": 91,
-    "surdolog": 95,          # Слуховой аппарат / ЛОР
-    "triholog": 96,          # Специалист по волосам
-    "fizioterapevt": 107,
-    "funkcionalnyy-diagnost": 108 # ЭКГ / СМАД / Холтер
+    "anesteziolog-reanimatolog": 2,
+    "venerolog": 75,
+    "gastroenterolog": 15,
+    "gematolog": 16,         # Специалист по крови
+    "ginekolog": 20,         # Дубликат для гинеколога
+    "ginekolog-endokrinolog": 19,
+
+    "dermatovenerolog": 7,
+    "dermatocosmetolog": 77,
+    "dermatolog": 6,
+    "dietolog": 8,
+    "immunolog": 23,
+    "infektsionist": 24,
+    "kardiolog": 26,
+    "kardiohirurg": 25,
+    "kombustiolog": 59,
+    "kosmetolog": 79,
+    "logoped": 27,
+    "lor": 80,
+    "mammolog": 28,
+    "manualniy-terapevt": 81,
+    "massazhist": 29,
+    "medsestra": 82,
+    "nevropatolog": 84,
+    "neyrohirurg": 32,
+    "nefrolog": 31,
+    "nutriciolog": 62,
+
+    "okulist": 85,
+    "onkodermatolog": 55,
+    
+
+    "terapevt": 97,
 }
 
 # Заполняется при старте из API, фоллбек если API недоступен

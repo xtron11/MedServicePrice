@@ -15,7 +15,6 @@ from back.app.models import Base, ServiceCategory
 from back.app.config import settings
 from back.app.db_service import save_parsed_data, log_parser_execution, save_clinic_branches
 
-SOURCE = "invitro.kz"
 
 CITIES = [
     "almaty", "astana", "shymkent", "karaganda", "aktobe", "esik",
@@ -241,7 +240,6 @@ async def fetch_uzi(city: str, client: httpx.AsyncClient, semaphore: asyncio.Sem
 
 async def run():
     Base.metadata.create_all(engine)
-    # 1-2 потока идеальны для Инвитро, чтобы куки городов на бэкенде не пересекались
     semaphore = asyncio.Semaphore(1) 
 
     async with httpx.AsyncClient(headers=HEADERS, follow_redirects=True, verify=False) as client:

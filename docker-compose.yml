@@ -18,9 +18,11 @@ services:
       timeout: 5s
       retries: 5
 
-  # 2. Бэкенд на FastAPI
+  # 2. Бэкенд на FastAPI (с автосидингом)
   api:
     build: .
+    # Используем sh -c, чтобы выполнить последовательно заполнение справочника и старт API
+    command: sh -c "python -m back.app.normalizer --seed && uvicorn back.app.main:app --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
     volumes:

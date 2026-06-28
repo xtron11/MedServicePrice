@@ -63,14 +63,28 @@ def get_stats():
 # ─── 2. АВТОДОПОЛНЕНИЕ ────────────────────────────────────────────────────────
 @app.get("/api/suggest", summary="Подсказки для строки поиска")
 def suggest(q: str = Query(..., min_length=2)):
-    """Возвращает названия из справочника — для выпадающего списка."""
     with get_session() as session:
         rows = session.execute(
-            select(ServiceCatalog.name)
-            .where(ServiceCatalog.name.ilike(f"%{q}%"))
+            select(ServiceCatalog)
+            .where(
+                or_(
+                    ServiceCatalog.name.ilike(f"%{q}%"),
+                    ServiceCatalog.synonyms.ilike(f"%{q}%"),
+                )
+            )
             .limit(10)
         ).scalars().all()
-    return {"suggestions": rows}
+
+    suggestions = []
+
+    for item in rows:
+        # Формируем один компактный объект для каждой услуги
+        suggestions.append({
+            "value": item.name,                             # Что пойдет в строку поиска при клике
+            "all_synonyms": item.synonyms                   # Вообще все синонимы, если пригодятся
+        })
+
+    return {"suggestions": suggestions}
 
 
 # ─── 3. ПОИСК ─────────────────────────────────────────────────────────────────
@@ -105,8 +119,14 @@ def search(
                 .where(Price.parsed_at >= get_active_threshold())
             )
 
+            # Переключаем логику поиска в зависимости от результатов из справочника
             if catalog_service:
-                stmt = stmt.where(Price.service_id == catalog_service.id)
+                stmt = stmt.where(
+                    or_(
+                        Price.service_id == catalog_service.id,
+                        Price.service_name_raw.ilike(f"%{query}%")
+                    )
+                )
             else:
                 stmt = stmt.where(Price.service_name_raw.ilike(f"%{query}%"))
 
@@ -123,10 +143,15 @@ def search(
             else:
                 stmt = stmt.order_by(Price.price_kzt.asc())
 
+            # ↴ ДОБАВЛЯЕМ СТРОКУ СЮДА (модифицируем сам SQL-запрос перед отправкой)
+            stmt = stmt.limit(50)
+
+            # База данных выполнит уже ограниченный запрос, вернув максимум 150 строк
             rows = session.execute(stmt).all()
 
             # Батч-загрузка филиалов одним запросом
             clinic_ids = list({r.Clinic.id for r in rows})
+
             branches_map: dict = {}
             if clinic_ids:
                 branches = session.execute(
@@ -164,7 +189,7 @@ def search(
                 "city":           r.Clinic.city,
                 "source_url":     r.Clinic.source_url,
                 "updated_at":     r.Price.parsed_at.strftime("%d.%m.%Y") if r.Price.parsed_at else None,
-                "branches":       branches_map.get(r.Clinic.id, []),
+                "branches":        branches_map.get(r.Clinic.id, [])[:3],
             }
             for r in rows
         ]
