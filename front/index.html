@@ -144,12 +144,12 @@
                 <div v-if="!hasSearched" class="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
                 <!-- Переключатель категорий услуг (динамически по данным из API) -->
-                <div v-if="!hasSearched" class="flex flex-wrap justify-center mb-8 gap-2.5 p-1.5 bg-slate-100/60 dark:bg-slate-950/60 border border-slate-200/50 dark:border-slate-800/40 rounded-3xl sm:rounded-full w-full max-w-md sm:w-fit mx-auto shadow-inner relative z-10">
+                <div v-if="!hasSearched" class="flex flex-wrap justify-center mb-8 gap-2.5 p-1.5 bg-slate-100/60 dark:bg-slate-950/60 border border-slate-200/50 dark:border-slate-800/40 rounded-3xl sm:rounded-full w-full max-w-md sm:max-w-none sm:w-fit mx-auto shadow-inner relative z-10">
                     <!-- Все категории -->
                     <button 
                         @click="filters.category = ''; if (hasSearched) searchServices()"
                         class="px-5 py-2.5 sm:px-7 sm:py-3.5 rounded-full font-bold text-xs sm:text-sm tracking-wide transition-all duration-200 cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
-                        :class="!filters.category ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-[0_4px_12px_rgba(59,130,246,0.12)] border border-slate-100 dark:border-slate-700/50 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
+                        :class="!filters.category ? 'bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white shadow-[0_6px_20px_rgba(37,99,235,0.25)] border border-blue-600 dark:border-blue-500 font-extrabold' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/40 border border-transparent'"
                     >
                         <i class="fa-solid fa-layer-group text-sm"></i>
                         Все разделы
@@ -161,7 +161,7 @@
                         :key="cat.value"
                         @click="filters.category = cat.value; if (hasSearched) searchServices()"
                         class="px-5 py-2.5 sm:px-7 sm:py-3.5 rounded-full font-bold text-xs sm:text-sm tracking-wide transition-all duration-200 cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
-                        :class="filters.category === cat.value ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-[0_4px_12px_rgba(59,130,246,0.12)] border border-slate-100 dark:border-slate-700/50 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
+                        :class="filters.category === cat.value ? 'bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white shadow-[0_6px_20px_rgba(37,99,235,0.25)] border border-blue-600 dark:border-blue-500 font-extrabold' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/40 border border-transparent'"
                     >
                         <i class="fa-solid text-sm" :class="cat.value === 'laboratory' ? 'fa-flask-vial' : (cat.value === 'doctor' ? 'fa-user-doctor' : (cat.value === 'diagnostics' ? 'fa-heart-pulse' : 'fa-syringe'))"></i>
                         {{ cat.label }}
