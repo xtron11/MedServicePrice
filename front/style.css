@@ -134,6 +134,7 @@ body {
 
 .animate-marquee {
     display: flex;
+    flex-shrink: 0;
     width: max-content;
     animation: marquee 35s linear infinite;
 }
