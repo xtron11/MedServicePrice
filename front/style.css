@@ -3,6 +3,8 @@
 html {
     /* Плавный скролл при клике на якорные ссылки (например, в меню шапки) */
     scroll-behavior: smooth;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 body {
@@ -11,6 +13,8 @@ body {
                       radial-gradient(at 50% 0%, rgba(224, 242, 254, 0.4) 0px, transparent 50%),
                       radial-gradient(at 100% 0%, rgba(216, 180, 254, 0.35) 0px, transparent 50%);
     background-attachment: fixed;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .dark body {
@@ -109,12 +113,12 @@ body {
 
 .toast-fade-enter-from {
     opacity: 0;
-    transform: translate(-50%, -24px) scale(0.95);
+    transform: translateY(-24px) scale(0.95);
 }
 
 .toast-fade-leave-to {
     opacity: 0;
-    transform: translate(-50%, -16px) scale(0.95);
+    transform: translateY(-16px) scale(0.95);
 }
 
 /* Предотвращение мерцания Vue до инициализации (вместе с директивой v-cloak) */

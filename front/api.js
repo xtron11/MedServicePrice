@@ -146,16 +146,22 @@ const MedicalApi = {
                     rawSuggestions = data.results;
                 }
 
-                // Преобразуем массив объектов или строк в массив строк
+                // Преобразуем массив объектов или строк в структурированный массив объектов
                 return rawSuggestions
                     .map(item => {
-                        if (!item) return '';
+                        if (!item) return null;
                         if (typeof item === 'object') {
-                            return item.value || item.name || '';
+                            return {
+                                value: item.value || item.name || '',
+                                synonyms: item.all_synonyms || item.synonyms || ''
+                            };
                         }
-                        return String(item);
+                        return {
+                            value: String(item),
+                            synonyms: ''
+                        };
                     })
-                    .filter(Boolean);
+                    .filter(item => item && item.value);
             }
         } catch (e) {
             console.warn("MedicalApi: Не удалось получить подсказки с сервера.", e.message);
@@ -225,6 +231,36 @@ const MedicalApi = {
             }
         } catch (e) {
             console.warn("MedicalApi: Ошибка при выполнении поиска через API бэкенда.", e.message);
+        }
+        return null;
+    },
+
+    /**
+     * Получить историю цен за последние 30 дней по ID цены
+     * @param {string} priceId 
+     * @returns {Promise<Object>}
+     */
+    async getServiceHistory(priceId) {
+        try {
+            const params = new URLSearchParams();
+            if (priceId) params.append('price_id', priceId);
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            
+            const res = await fetch(`${this.baseUrl}/api/service/history?${params.toString()}`, {
+                signal: controller.signal,
+                headers: { 'Accept': 'application/json' }
+            });
+            clearTimeout(timeoutId);
+            
+            if (res.ok) {
+                const data = await res.json();
+                this.isConnected = true;
+                return data;
+            }
+        } catch (e) {
+            console.warn("MedicalApi: Ошибка при получении истории цен через API бэкенда.", e.message);
         }
         return null;
     }
