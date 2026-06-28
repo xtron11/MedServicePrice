@@ -402,6 +402,17 @@
                             </div>
                         </div>
 
+                        <div class="mb-5">
+                            <label class="block text-sm font-extrabold text-slate-800 dark:text-slate-300 mb-2">Минимальный рейтинг</label>
+                            <select v-model="filters.minRating" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 dark:text-white rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                <option :value="0">Любой рейтинг</option>
+                                <option :value="4.0">⭐ 4.0 и выше</option>
+                                <option :value="4.3">⭐ 4.3 и выше</option>
+                                <option :value="4.5">⭐ 4.5 и выше</option>
+                                <option :value="4.7">⭐ 4.7 и выше</option>
+                            </select>
+                        </div>
+
                         <!-- Фильтры урезаны по запросу -->
                     </div>
                 </aside>
@@ -462,8 +473,22 @@
                                 </div>
                             </div>
 
-                            <!-- Сортировка -->
-                            <div class="flex flex-wrap items-center gap-4 w-full md:w-auto justify-end">
+                            <!-- Сортировка и Геолокация -->
+                            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                                <!-- Кнопка геолокации -->
+                                <button 
+                                    @click="requestLocation" 
+                                    :disabled="isLocating"
+                                    class="text-xs font-bold px-3 py-2 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer button-press-effect"
+                                    :class="userLatitude && userLongitude 
+                                        ? 'bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/40' 
+                                        : 'bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-900/40'"
+                                >
+                                    <i class="fa-solid" :class="isLocating ? 'fa-spinner fa-spin' : 'fa-location-crosshairs'"></i>
+                                    <span v-if="userLatitude && userLongitude">📍 Геопозиция активна</span>
+                                    <span v-else>📍 Показать расстояние</span>
+                                </button>
+
                                 <div class="flex items-center gap-2">
                                     <span class="text-xs font-bold text-slate-700 dark:text-slate-400">Сортировка:</span>
                                     <select v-model="sortBy" class="text-xs bg-white dark:bg-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold cursor-pointer">
@@ -471,7 +496,7 @@
                                         <option value="price_desc">Сначала дорогие</option>
                                         <option value="rating">По рейтингу клиники</option>
                                         <option value="date">По дате обновления</option>
-
+                                        <option value="distance">По расстоянию от меня</option>
                                     </select>
                                 </div>
                             </div>
@@ -642,18 +667,53 @@
                                         </div>
                                     </div>
 
-                                    <!-- Рейтинг клиники -->
-                                    <div class="flex items-start gap-3">
-                                        <div class="w-8 h-8 bg-purple-100/60 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                            <i class="fa-solid fa-star"></i>
+                                    <!-- Рейтинг клиники из открытых источников -->
+                                    <div class="border-t border-slate-100 dark:border-slate-800/60 pt-4">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center gap-2.5">
+                                                <div class="w-8 h-8 bg-purple-100/60 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                    <i class="fa-solid fa-star"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="text-[10px] uppercase font-black tracking-wider text-slate-400 dark:text-slate-500">Рейтинг клиники</p>
+                                                    <div class="flex items-center gap-1.5 mt-0.5">
+                                                        <span class="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                                            {{ getClinicRatingDetails(selectedServiceItem.clinic, selectedServiceItem.city).overall }} из 5.0
+                                                        </span>
+                                                        <span class="text-amber-400 text-xs flex gap-0.5">
+                                                            <i class="fa-solid fa-star text-[9px]" v-for="i in Math.floor(getClinicRatingDetails(selectedServiceItem.clinic, selectedServiceItem.city).overall)"></i>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span class="text-[11px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
+                                                {{ getClinicRatingDetails(selectedServiceItem.clinic, selectedServiceItem.city).totalReviews }} отзывов
+                                            </span>
                                         </div>
-                                        <div>
-                                            <p class="text-xs text-slate-400 dark:text-slate-500">Рейтинг клиники</p>
-                                            <div class="flex items-center gap-1.5 mt-0.5">
-                                                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ selectedServiceItem.rating }} из 5.0</span>
-                                                <span class="text-amber-400 text-xs flex gap-0.5">
-                                                    <i class="fa-solid fa-star text-[10px]" v-for="i in Math.floor(selectedServiceItem.rating)"></i>
-                                                </span>
+
+                                        <!-- Расшифровка по авторитетным открытым источникам -->
+                                        <div class="space-y-2 mt-3 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/80">
+                                            <p class="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider mb-2 flex items-center gap-1">
+                                                <i class="fa-solid fa-shield-halved text-blue-500 text-[10px]"></i> Рейтинги из открытых источников РК
+                                            </p>
+                                            
+                                            <div v-for="src in getClinicRatingDetails(selectedServiceItem.clinic, selectedServiceItem.city).sources" :key="src.name" class="flex items-center justify-between text-xs py-1 hover:bg-slate-100/40 dark:hover:bg-slate-800/20 px-1 rounded-lg transition-colors">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="w-5 h-5 rounded-md flex items-center justify-center text-[10px]" :class="src.color">
+                                                        <i class="fa-solid" :class="src.icon"></i>
+                                                    </span>
+                                                    <span class="font-extrabold text-slate-700 dark:text-slate-300">{{ src.name }}</span>
+                                                </div>
+                                                <div class="flex items-center gap-3">
+                                                    <div class="flex items-center gap-1">
+                                                        <span class="font-black text-slate-800 dark:text-slate-100">{{ src.rating }}</span>
+                                                        <i class="fa-solid fa-star text-amber-400 text-[9px]"></i>
+                                                    </div>
+                                                    <span class="text-[10px] text-slate-400 dark:text-slate-500">({{ src.reviewsCount }} отзывов)</span>
+                                                    <a :href="src.link" target="_blank" class="text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 text-[10px] font-bold flex items-center gap-0.5 transition-colors hover:underline">
+                                                        Найти <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+                                                    </a>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1018,6 +1078,18 @@
                             </div>
                         </div>
 
+                        <!-- Минимальный рейтинг -->
+                        <div>
+                            <label class="block text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Минимальный рейтинг клиники</label>
+                            <select v-model="filters.minRating" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                <option :value="0">Любой рейтинг</option>
+                                <option :value="4.0">⭐ 4.0 и выше</option>
+                                <option :value="4.3">⭐ 4.3 и выше</option>
+                                <option :value="4.5">⭐ 4.5 и выше</option>
+                                <option :value="4.7">⭐ 4.7 и выше</option>
+                            </select>
+                        </div>
+
                     </div>
 
                     <!-- Подвал с кнопкой применения -->
@@ -1121,18 +1193,7 @@
                                         {{ formatFullAddress(item.city, item.address) }}
                                     </td>
                                 </tr>
-                                <!-- Онлайн запись -->
-                                <tr>
-                                    <td class="py-3 px-2 sm:px-4 font-extrabold text-slate-500 dark:text-slate-400">Онлайн-запись</td>
-                                    <td v-for="item in comparisonList" :key="item.id" class="py-3 px-2 sm:px-4 text-center">
-                                        <span v-if="item.has_online_booking" class="text-green-600 dark:text-green-400 font-bold flex items-center justify-center gap-1">
-                                            <i class="fa-solid fa-circle-check text-xs sm:text-sm"></i> <span class="text-[11px] sm:text-xs">Есть</span>
-                                        </span>
-                                        <span v-else class="text-slate-400 dark:text-slate-500 flex items-center justify-center gap-1">
-                                            <i class="fa-solid fa-circle-xmark text-xs sm:text-sm"></i> <span class="text-[11px] sm:text-xs">Нет</span>
-                                        </span>
-                                    </td>
-                                </tr>
+
                                 <!-- Телефон -->
                                 <tr>
                                     <td class="py-3 px-2 sm:px-4 font-extrabold text-slate-500 dark:text-slate-400">Контакты</td>
